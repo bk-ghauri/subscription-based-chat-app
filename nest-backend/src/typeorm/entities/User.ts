@@ -5,6 +5,7 @@ import {
   OneToMany,
   Unique,
   OneToOne,
+  BeforeInsert,
 } from 'typeorm';
 import { Message } from './Message';
 import { Subscription } from './Subscription';
@@ -13,6 +14,8 @@ import { AccountType } from './AccountType';
 import { Suspended } from './Suspended';
 import { Attachment } from './Attachment';
 import { ConversationMember } from './ConversationMember';
+
+import * as bcrypt from 'bcrypt';
 
 @Entity()
 export class User {
@@ -25,6 +28,12 @@ export class User {
   @Column({ nullable: true })
   google_id: string;
 
+  @Column({ nullable: true })
+  password: string;
+
+  @Column({ nullable: true })
+  hashed_refresh_token: string;
+
   @Column()
   display_name: string;
 
@@ -33,9 +42,6 @@ export class User {
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
-
-  @OneToMany(() => RefreshToken, (token) => token.user)
-  refreshTokens: RefreshToken[];
 
   @OneToMany(() => Subscription, (sub) => sub.user)
   subscriptions: Subscription[];
@@ -54,4 +60,9 @@ export class User {
 
   @OneToOne(() => Suspended, (suspended) => suspended.user)
   suspended: Suspended;
+
+  @BeforeInsert()
+  async hashPassword() {
+    this.password = await bcrypt.hash(this.password, 10);
+  }
 }

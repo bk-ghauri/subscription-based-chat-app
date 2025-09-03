@@ -16,6 +16,8 @@ import { Subscription } from './typeorm/entities/Subscription';
 import { Message } from './typeorm/entities/Message';
 import { User } from './typeorm/entities/User';
 import { ConfigModule } from '@nestjs/config';
+import { PassportModule } from '@nestjs/passport';
+import { UserController } from './user/user.controller';
 
 @Module({
   imports: [
@@ -30,7 +32,6 @@ import { ConfigModule } from '@nestjs/config';
         User,
         AccountType,
         Suspended,
-        RefreshToken,
         Conversation,
         ConversationMember,
         Attachment,
@@ -44,10 +45,11 @@ import { ConfigModule } from '@nestjs/config';
     AttachmentsModule,
     SubscriptionsModule,
     ConfigModule.forRoot({
-      isGlobal: true, // Makes ConfigModule available throughout the application
+      isGlobal: true, // Makes ConfigModule available in every module
     }),
+    PassportModule.register({ session: true }),
   ],
-  controllers: [AppController],
+  controllers: [AppController, UserController],
   providers: [AppService],
 })
 export class AppModule {}
