@@ -3,7 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import jwtConfig from '../config/jwt.config';
 import { AuthJwtPayload } from '../types/auth-jwtPayload';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import refreshJwtConfig from '../config/refresh-jwt.config';
 import { Request } from 'express';
 import { AuthService } from '../auth.service';
@@ -29,7 +29,12 @@ export class RefreshJwtStrategy extends PassportStrategy(
   // authorization: Bearer sldfk;lsdkf'lskald'sdkf;sdl
 
   validate(req: Request, payload: AuthJwtPayload) {
-    const refreshToken = req.get('authorization').replace('Bearer', '').trim();
+    const authHeader = req.get('authorization');
+    if (!authHeader) {
+      throw new UnauthorizedException('Authorization header missing');
+    }
+
+    const refreshToken = authHeader.replace('Bearer', '').trim();
     const userId = payload.sub;
     return this.authService.validateRefreshToken(userId, refreshToken);
   }

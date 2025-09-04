@@ -9,7 +9,6 @@ import {
 } from 'typeorm';
 import { Message } from './Message';
 import { Subscription } from './Subscription';
-import { RefreshToken } from './RefreshToken';
 import { AccountType } from './AccountType';
 import { Suspended } from './Suspended';
 import { Attachment } from './Attachment';
@@ -28,11 +27,11 @@ export class User {
   @Column({ nullable: true })
   google_id: string;
 
-  @Column({ nullable: true })
+  @Column()
   password: string;
 
-  @Column({ nullable: true })
-  hashed_refresh_token: string;
+  @Column({ type: 'text', nullable: true })
+  hashed_refresh_token: string | null;
 
   @Column()
   display_name: string;

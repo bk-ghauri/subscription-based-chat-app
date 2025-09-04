@@ -10,14 +10,12 @@ import { AccountType } from './typeorm/entities/AccountType';
 import { Suspended } from './typeorm/entities/Suspended';
 import { Conversation } from './typeorm/entities/Conversation';
 import { ConversationMember } from './typeorm/entities/ConversationMember';
-import { RefreshToken } from './typeorm/entities/RefreshToken';
 import { Attachment } from './typeorm/entities/Attachment';
 import { Subscription } from './typeorm/entities/Subscription';
-import { Message } from './typeorm/entities/Message';
 import { User } from './typeorm/entities/User';
 import { ConfigModule } from '@nestjs/config';
-import { PassportModule } from '@nestjs/passport';
-import { UserController } from './user/user.controller';
+import { MessagesModule } from './messages/messages.module';
+import jwtConfig from './auth/config/jwt.config';
 
 @Module({
   imports: [
@@ -36,20 +34,21 @@ import { UserController } from './user/user.controller';
         ConversationMember,
         Attachment,
         Subscription,
-        Message,
       ],
-      synchronize: true,
+      synchronize: false,
+    }),
+    ConfigModule.forRoot({
+      isGlobal: true, // Makes ConfigModule available in every module
+      envFilePath: '.env',
+      load: [jwtConfig],
     }),
     UsersModule,
     AuthModule,
     AttachmentsModule,
     SubscriptionsModule,
-    ConfigModule.forRoot({
-      isGlobal: true, // Makes ConfigModule available in every module
-    }),
-    PassportModule.register({ session: true }),
+    MessagesModule,
   ],
-  controllers: [AppController, UserController],
+  controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}

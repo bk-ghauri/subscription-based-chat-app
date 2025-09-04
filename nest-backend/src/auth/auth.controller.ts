@@ -7,19 +7,23 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  Body,
 } from '@nestjs/common';
-import {
-  GoogleAuthGuard,
-  LocalAuthGuard,
-  RefreshAuthGuard,
-} from './utils/Guards';
+import { JwtAuthGuard, LocalAuthGuard, RefreshAuthGuard } from './utils/Guards';
 //import type { Request } from 'express';
 import { Public } from './decorators/public.decorator';
 import { AuthService } from './auth.service';
+import { CreateUserDto } from '@app/users/dto/create-user.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Public()
+  @Post('signup')
+  async signup(@Body() createUserDto: CreateUserDto) {
+    return this.authService.signup(createUserDto);
+  }
 
   @Public()
   @HttpCode(HttpStatus.OK)
@@ -35,28 +39,9 @@ export class AuthController {
     return this.authService.refreshToken(req.user.id);
   }
 
-  @Public()
-  @Get('google/login')
-  @UseGuards(GoogleAuthGuard)
-  handleGoogleLogin() {
-    return { message: 'Google login endpoint' };
-  }
-
-  @Public()
-  @Get('google/callback')
-  @UseGuards(GoogleAuthGuard)
-  handleGoogleCallback(@Req() request) {
-    const response = await this.authService.login(request.user.id);
-    return { message: 'Google redirect endpoint' };
-  }
-
-  @Get('status')
-  user(@Req() request: Request) {
-    console.log('Request user:', request.user);
-    if (request.user) {
-      return { msg: 'Authenticated' };
-    } else {
-      return { msg: 'Not Authenticated' };
-    }
+  @UseGuards(JwtAuthGuard)
+  @Post('signout')
+  signOut(@Req() req) {
+    this.authService.signOut(req.user.id);
   }
 }

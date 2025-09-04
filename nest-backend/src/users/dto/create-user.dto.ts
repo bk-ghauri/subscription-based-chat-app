@@ -11,9 +11,8 @@ export class CreateUserDto {
   @IsString()
   google_id?: string; // only set if Google signup
 
-  @IsOptional()
   @IsString()
-  password?: string; // required if normal signup, null if Google signup
+  password: string;
 
   @IsOptional()
   @IsUrl()

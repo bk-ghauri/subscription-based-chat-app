@@ -1,29 +1,60 @@
-import { User } from '@app/typeorm/entities/User';
-import { CreateUserDto } from '@app/users/dto/create-user.dto';
 import { UserService } from '@app/users/users.service';
-import { GoogleUserDetails } from '@app/utils/types';
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { InjectRepository } from '@nestjs/typeorm';
 import { compare } from 'bcrypt';
 import { Repository } from 'typeorm';
 import refreshJwtConfig from './config/refresh-jwt.config';
 import * as config from '@nestjs/config';
 import { AuthJwtPayload } from './types/auth-jwtPayload';
 import * as argon2 from 'argon2';
+import { CreateUserDto } from '@app/users/dto/create-user.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectRepository(User) private readonly userRepository: Repository<User>,
     private userService: UserService,
     private jwtService: JwtService,
     @Inject(refreshJwtConfig.KEY)
     private refreshTokenConfig: config.ConfigType<typeof refreshJwtConfig>,
   ) {}
 
+  async signup(createUserDto: CreateUserDto) {
+    // Check if user already exists
+    const existingUser = await this.userService.findByEmail(
+      createUserDto.email,
+    );
+    if (existingUser) {
+      throw new BadRequestException('User with this email already exists');
+    }
+
+    const newUser = await this.userService.create({
+      ...createUserDto,
+    });
+
+    // Optionally auto-login (return tokens)
+    const { accessToken, refreshToken } = await this.generateTokens(
+      newUser.user_id,
+    );
+    const hashedRefreshToken = await argon2.hash(refreshToken);
+    await this.userService.updateHashedRefreshToken(
+      newUser.user_id,
+      hashedRefreshToken,
+    );
+
+    return {
+      id: newUser.user_id,
+      accessToken,
+      refreshToken,
+    };
+  }
+
   async validateUser(email: string, password: string) {
-    const user = await this.userRepository.findOne({ where: { email } });
+    const user = await this.userService.findByEmail(email);
     if (!user) throw new UnauthorizedException('User not found!');
     const isPasswordMatch = await compare(password, user.password);
     if (!isPasswordMatch)
@@ -78,27 +109,20 @@ export class AuthService {
       user.hashed_refresh_token,
       refreshToken,
     );
+
     if (!refreshTokenMatches)
       throw new UnauthorizedException('Invalid Refresh Token');
 
     return { id: userId };
   }
 
-  async validateGoogleUser(dto: CreateUserDto): Promise<User> {
-    console.log('Validating user with details:', dto);
-
-    const existing = await this.userRepository.findOne({
-      where: { email: dto.email },
-    });
-    if (existing) return existing;
-
-    console.log('User not found, creating new user:');
-    const newUser = this.userRepository.create(dto);
-    return this.userRepository.save(newUser);
+  async signOut(userId: string) {
+    await this.userService.updateHashedRefreshToken(userId, null);
   }
 
-  async findUser(user_id: string) {
-    const user = await this.userRepository.findOneBy({ user_id });
-    return user;
+  async validateJwtUser(userId: string) {
+    const user = await this.userService.findOne(userId);
+    if (!user) throw new UnauthorizedException('User not found!');
+    return { id: user.user_id };
   }
 }
