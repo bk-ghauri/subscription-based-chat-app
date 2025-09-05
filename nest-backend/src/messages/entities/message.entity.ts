@@ -5,41 +5,42 @@ import {
   ManyToOne,
   OneToMany,
 } from 'typeorm';
-import { Conversation } from '../../typeorm/entities/Conversation';
-import { User } from '../../typeorm/entities/User';
-import { Attachment } from '../../typeorm/entities/Attachment';
+import { User } from '@app/typeorm/entities/User';
+import { Conversation } from '@app/conversations/entities/conversation.entity';
+import { Attachment } from '@app/typeorm/entities/Attachment';
 
 @Entity()
 export class Message {
   @PrimaryGeneratedColumn('uuid')
   message_id: string;
 
-  @Column({ type: 'text' })
-  body: string;
+  @ManyToOne(() => Conversation, (conv) => conv.messages, {
+    onDelete: 'CASCADE',
+    nullable: false,
+  })
+  conversation: Conversation;
+
+  @ManyToOne(() => User, (user) => user.messages, { onDelete: 'SET NULL' })
+  sender: User;
+
+  @Column({ type: 'text', nullable: true })
+  body: string | null;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 
-  //   @Column({ type: 'timestamp', nullable: true })
-  //   deleted_at: Date;
+  @Column({ type: 'timestamp', nullable: true })
+  deleted_at: Date;
 
-  //   @Column({
-  //     type: 'enum',
-  //     enum: ['SENT', 'DELIVERED', 'READ'],
-  //     default: 'SENT',
-  //   })
-  //   message_status: string;
-
-  //   @Column({ default: false })
-  //   is_removed: boolean;
-
-  @ManyToOne(() => Conversation, (conv) => conv.messages, {
-    onDelete: 'CASCADE',
+  @Column({
+    type: 'enum',
+    enum: ['SENT', 'DELIVERED', 'READ'],
+    default: 'SENT',
   })
-  conversation: Conversation;
+  message_status: string;
 
-  @ManyToOne(() => User, (user) => user.messages, { onDelete: 'CASCADE' })
-  sender: User;
+  @Column({ default: false })
+  is_removed: boolean;
 
   @OneToMany(() => Attachment, (file) => file.message)
   attachments: Attachment[];

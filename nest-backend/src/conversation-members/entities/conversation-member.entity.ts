@@ -1,6 +1,6 @@
 import { Entity, PrimaryColumn, ManyToOne, Column } from 'typeorm';
-import { User } from './User';
-import { Conversation } from './Conversation';
+import { User } from '@app/typeorm/entities/User';
+import { Conversation } from '@app/conversations/entities/conversation.entity';
 
 @Entity()
 export class ConversationMember {

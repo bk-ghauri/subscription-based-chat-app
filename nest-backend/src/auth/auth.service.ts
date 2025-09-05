@@ -36,7 +36,7 @@ export class AuthService {
       ...createUserDto,
     });
 
-    // Optionally auto-login (return tokens)
+    // Auto-login (return tokens)
     const { accessToken, refreshToken } = await this.generateTokens(
       newUser.user_id,
     );

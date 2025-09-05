@@ -15,6 +15,8 @@ import { Subscription } from './typeorm/entities/Subscription';
 import { User } from './typeorm/entities/User';
 import { ConfigModule } from '@nestjs/config';
 import { MessagesModule } from './messages/messages.module';
+import { ConversationsModule } from './conversations/conversations.module';
+import { ConversationMembersModule } from './conversation-members/conversation-members.module';
 import jwtConfig from './auth/config/jwt.config';
 
 @Module({
@@ -47,6 +49,8 @@ import jwtConfig from './auth/config/jwt.config';
     AttachmentsModule,
     SubscriptionsModule,
     MessagesModule,
+    ConversationsModule,
+    ConversationMembersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
