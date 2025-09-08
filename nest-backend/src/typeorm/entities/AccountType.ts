@@ -12,7 +12,7 @@ export class AccountType {
 
   @Column({
     type: 'enum',
-    enum: ['FREE', 'PREMIUM', 'ADMIN'],
+    enum: ['FREE', 'PREMIUM'],
     default: 'FREE',
   })
   role: string;

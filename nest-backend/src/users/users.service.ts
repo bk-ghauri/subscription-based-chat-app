@@ -4,10 +4,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '@app/typeorm/entities/User';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { AccountType } from '@app/typeorm/entities/AccountType';
 
 @Injectable()
 export class UserService {
-  constructor(@InjectRepository(User) private UserRepo: Repository<User>) {}
+  constructor(
+    @InjectRepository(User) private UserRepo: Repository<User>,
+    @InjectRepository(AccountType) private accTypeRepo: Repository<AccountType>,
+  ) {}
 
   async updateHashedRefreshToken(
     userId: string,
@@ -21,6 +25,7 @@ export class UserService {
 
   async create(createUserDto: CreateUserDto) {
     const user = await this.UserRepo.create(createUserDto);
+    await this.accTypeRepo.save({ user_id: user.user_id, type: 'FREE' });
     return await this.UserRepo.save(user);
   }
 

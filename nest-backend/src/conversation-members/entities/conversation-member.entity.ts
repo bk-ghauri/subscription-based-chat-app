@@ -13,7 +13,6 @@ export class ConversationMember {
 
   @PrimaryColumn('uuid')
   user_id: string;
-
   @ManyToOne(() => User, (user) => user.conversations, { onDelete: 'CASCADE' })
   user: User;
 

@@ -42,6 +42,25 @@ export class ConversationsService {
     return { success: true };
   }
 
+  async findByUser(userId: string) {
+    const memberships = await this.conversationMemberRepository.find({
+      where: { user_id: userId },
+      relations: ['conversation', 'conversation.created_by'],
+      order: { conversation: { created_at: 'DESC' } },
+    });
+
+    return memberships.map((m) => ({
+      id: m.conversation.conversation_id,
+      type: m.conversation.type,
+      name: m.conversation.name,
+      createdAt: m.conversation.created_at,
+      createdBy: {
+        id: m.conversation.created_by.user_id,
+        displayName: m.conversation.created_by.display_name,
+      },
+    }));
+  }
+
   findAll() {
     return `This action returns all conversations`;
   }

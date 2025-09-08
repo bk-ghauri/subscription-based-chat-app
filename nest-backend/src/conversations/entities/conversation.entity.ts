@@ -11,12 +11,14 @@ import { ConversationMember } from '@app/conversation-members/entities/conversat
 
 @Entity()
 export class Conversation {
-  s;
   @PrimaryGeneratedColumn('uuid')
   conversation_id: string;
 
-  @Column({ type: 'enum', enum: ['PRIVATE', 'GROUP'] })
+  @Column({ type: 'enum', enum: ['DM', 'GROUP'] })
   type: string;
+
+  @Column({ nullable: true })
+  name: string; // optional, only for GROUP conversations
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;

@@ -7,12 +7,12 @@ import {
   OneToOne,
   BeforeInsert,
 } from 'typeorm';
-import { Message } from './Message';
+import { Message } from '@app/messages/entities/message.entity';
 import { Subscription } from './Subscription';
 import { AccountType } from './AccountType';
 import { Suspended } from './Suspended';
 import { Attachment } from './Attachment';
-import { ConversationMember } from './ConversationMember';
+import { ConversationMember } from '@app/conversation-members/entities/conversation-member.entity';
 
 import * as bcrypt from 'bcrypt';
 

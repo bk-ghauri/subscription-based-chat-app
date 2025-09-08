@@ -35,7 +35,7 @@ export class MessagesGateway implements OnGatewayConnection {
 
       if (!user) {
         client.disconnect();
-        return;
+        return { success: false, message: 'Unauthorized' };
       }
 
       (client as any).user = {
@@ -55,14 +55,6 @@ export class MessagesGateway implements OnGatewayConnection {
     @ConnectedSocket() client: Socket,
   ) {
     const user = (client as any).user;
-    if (!user) return { error: 'Unauthorized' };
-
-    // ensure the user is a member of the room they’re posting to
-    const result = await this.conversationsService.validateMembership(
-      user.id,
-      dto.conversationId,
-    );
-    if (!result.success) return result;
 
     const message = await this.messagesService.create({
       ...dto,
