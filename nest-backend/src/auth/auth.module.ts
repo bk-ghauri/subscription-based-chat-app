@@ -11,10 +11,11 @@ import { JwtStrategy } from './utils/JwtStrategy';
 import refreshJwtConfig from './config/refresh-jwt.config';
 import { RefreshJwtStrategy } from './utils/RefreshStrategy';
 import { UserService } from '@app/users/users.service';
+import { AccountType } from '@app/typeorm/entities/AccountType';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, AccountType]),
     JwtModule.registerAsync(jwtConfig.asProvider()),
     ConfigModule.forFeature(refreshJwtConfig),
     ConfigModule.forFeature(jwtConfig),
@@ -27,5 +28,6 @@ import { UserService } from '@app/users/users.service';
     AuthService,
     UserService,
   ],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

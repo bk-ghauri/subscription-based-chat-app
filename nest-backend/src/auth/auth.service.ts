@@ -32,6 +32,13 @@ export class AuthService {
       throw new BadRequestException('User with this email already exists');
     }
 
+    const existingDisplayName = await this.userService.findByDisplayName(
+      createUserDto.display_name,
+    );
+    if (existingDisplayName) {
+      throw new BadRequestException('Display name is already taken');
+    }
+
     const newUser = await this.userService.create({
       ...createUserDto,
     });

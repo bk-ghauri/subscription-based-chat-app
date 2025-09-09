@@ -19,33 +19,33 @@ import { JwtAuthGuard } from '@app/auth/utils/Guards';
 export class ConversationsController {
   constructor(private readonly conversationsService: ConversationsService) {}
 
-  @Get('/my-conversations')
+  // GET /conversations
+  @Get()
   async getUserConversations(@Req() req) {
-    const userId = req.user.sub;
+    const userId = req.user?.id;
     return this.conversationsService.findByUser(userId);
   }
 
-  @Post()
-  create(@Body() createConversationDto: CreateConversationDto) {
-    return this.conversationsService.create(createConversationDto);
+  // POST /conversations/dm
+  @Post('dm')
+  async createDm(@Req() req: any, @Body() dto: CreateConversationDto) {
+    console.log('Incoming DTO:', dto);
+    const userId = req.user?.id;
+    return this.conversationsService.createDmConversation(userId, dto);
   }
 
-  @Get()
-  findAll() {
-    return this.conversationsService.findAll();
+  // POST /conversations/group
+  @Post('group')
+  async createGroup(@Req() req: any, @Body() dto: CreateConversationDto) {
+    const userId = req.user?.id;
+    return this.conversationsService.createGroupConversation(userId, dto);
   }
+
+  //  POST /groups/{groupId}/members
 
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.conversationsService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateConversationDto: UpdateConversationDto,
-  ) {
-    return this.conversationsService.update(+id, updateConversationDto);
   }
 
   @Delete(':id')

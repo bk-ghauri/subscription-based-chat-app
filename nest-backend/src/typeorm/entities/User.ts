@@ -33,7 +33,7 @@ export class User {
   @Column({ type: 'text', nullable: true })
   hashed_refresh_token: string | null;
 
-  @Column()
+  @Column({ unique: true, nullable: false })
   display_name: string;
 
   @Column({ nullable: true })

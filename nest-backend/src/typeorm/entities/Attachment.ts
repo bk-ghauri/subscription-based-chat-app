@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { User } from './User';
-import { Message } from './Message';
+import { Message } from '@app/messages/entities/message.entity';
 
 @Entity()
 export class Attachment {

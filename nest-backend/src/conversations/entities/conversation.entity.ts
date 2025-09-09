@@ -17,8 +17,8 @@ export class Conversation {
   @Column({ type: 'enum', enum: ['DM', 'GROUP'] })
   type: string;
 
-  @Column({ nullable: true })
-  name: string; // optional, only for GROUP conversations
+  @Column({ type: 'text', nullable: true })
+  name: string | null; // optional, only for GROUP conversations
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;

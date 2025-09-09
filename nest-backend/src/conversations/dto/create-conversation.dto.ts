@@ -8,8 +8,8 @@ import {
 } from 'class-validator';
 
 export class CreateConversationDto {
-  @IsEnum(['PRIVATE', 'GROUP'])
-  type: 'PRIVATE' | 'GROUP';
+  @IsEnum(['DM', 'GROUP'])
+  type: 'DM' | 'GROUP';
 
   @IsOptional()
   @IsString()

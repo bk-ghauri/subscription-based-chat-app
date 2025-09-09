@@ -24,9 +24,9 @@ export class UserService {
   }
 
   async create(createUserDto: CreateUserDto) {
-    const user = await this.UserRepo.create(createUserDto);
+    const user = await this.UserRepo.save(this.UserRepo.create(createUserDto));
     await this.accTypeRepo.save({ user_id: user.user_id, type: 'FREE' });
-    return await this.UserRepo.save(user);
+    return user;
   }
 
   async update(user_id: string, updateUserDto: UpdateUserDto) {
@@ -51,6 +51,12 @@ export class UserService {
       where: {
         email,
       },
+    });
+  }
+
+  async findByDisplayName(display_name: string) {
+    return await this.UserRepo.findOne({
+      where: { display_name },
     });
   }
 

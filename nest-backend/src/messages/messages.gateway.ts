@@ -27,7 +27,9 @@ export class MessagesGateway implements OnGatewayConnection {
 
   async handleConnection(client: Socket) {
     try {
-      const token = client.handshake.auth?.token; // or client.handshake.headers.authorization
+      const token =
+        client.handshake.auth?.token || client.handshake.headers.authorization;
+
       const payload = this.jwtService.verify(token);
 
       // Fetch user from DB using user_id
