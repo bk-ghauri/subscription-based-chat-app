@@ -29,7 +29,6 @@ export class ConversationsController {
   // POST /conversations/dm
   @Post('dm')
   async createDm(@Req() req: any, @Body() dto: CreateConversationDto) {
-    console.log('Incoming DTO:', dto);
     const userId = req.user?.id;
     return this.conversationsService.createDmConversation(userId, dto);
   }

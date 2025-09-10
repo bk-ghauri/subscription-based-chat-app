@@ -5,7 +5,7 @@ import { MessagesController } from './messages.controller';
 import { AuthModule } from '@app/auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Message } from './entities/message.entity';
-import { User } from '@app/typeorm/entities/User';
+import { User } from '@app/users/entities/User';
 import { Attachment } from '@app/typeorm/entities/Attachment';
 import { UserService } from '@app/users/users.service';
 import { ConversationsService } from '@app/conversations/conversations.service';
@@ -26,19 +26,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
   ],
   controllers: [MessagesController],
   imports: [
-    AuthModule,
+    //AuthModule,
     ConfigModule.forFeature(jwtConfig),
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        const cfg = configService.get('jwt') as any;
-        return {
-          secret: cfg?.secret ?? process.env.JWT_SECRET,
-          signOptions: cfg?.signOptions ?? { expiresIn: '3h' },
-        };
-      },
-    }),
     JwtModule.registerAsync(jwtConfig.asProvider()),
     TypeOrmModule.forFeature([
       Message,

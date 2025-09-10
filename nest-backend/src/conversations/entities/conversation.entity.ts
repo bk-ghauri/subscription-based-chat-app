@@ -5,7 +5,7 @@ import {
   OneToMany,
   ManyToOne,
 } from 'typeorm';
-import { User } from '@app/typeorm/entities/User';
+import { User } from '@app/users/entities/User';
 import { Message } from '@app/messages/entities/message.entity';
 import { ConversationMember } from '@app/conversation-members/entities/conversation-member.entity';
 

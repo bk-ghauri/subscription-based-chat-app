@@ -2,10 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { UpdateMessageDto } from './dto/update-message.dto';
 import { Message } from './entities/message.entity';
-import { InjectRepository } from '@nestjs/typeorm';
-import { User } from '@app/typeorm/entities/User';
 import { Repository } from 'typeorm';
-import { Conversation } from '@app/conversations/entities/conversation.entity';
+import { UserService } from '@app/users/users.service';
+import { ConversationsService } from '@app/conversations/conversations.service';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class MessagesService {
@@ -13,22 +13,19 @@ export class MessagesService {
     @InjectRepository(Message)
     private readonly messageRepository: Repository<Message>,
 
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-
-    @InjectRepository(Conversation)
-    private readonly conversationRepository: Repository<Conversation>,
+    private readonly userService: UserService,
+    private readonly conversationsService: ConversationsService,
   ) {}
 
   async create(dto: CreateMessageDto) {
-    const conversation = await this.conversationRepository.findOne({
-      where: { conversation_id: dto.conversationId },
-    });
+    const conversation = await this.conversationsService.findOne(
+      dto.conversationId,
+    );
+
     if (!conversation) throw new NotFoundException('Conversation not found');
 
-    const sender = await this.userRepository.findOne({
-      where: { user_id: dto.senderId },
-    });
+    const sender = await this.userService.findOne(dto.senderId);
+
     if (!sender) throw new NotFoundException('Sender not found');
 
     const message = this.messageRepository.create({
@@ -57,6 +54,7 @@ export class MessagesService {
       order: { created_at: 'ASC' },
       skip: (page - 1) * limit,
       take: limit,
+      withDeleted: false, // Exclude soft-deleted messages
     });
 
     // Transform into safe DTOs to prevent leaking sensitive info to frontend
@@ -96,7 +94,14 @@ export class MessagesService {
     return `This action updates a #${id} message`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} message`;
+  async remove(id: string) {
+    const result = await this.messageRepository.softDelete(id);
+
+    if (result.affected === 0) {
+      throw new NotFoundException(
+        `Message with ID ${id} not found or already deleted`,
+      );
+    }
+    return `Message #${id} has been soft-deleted`;
   }
 }

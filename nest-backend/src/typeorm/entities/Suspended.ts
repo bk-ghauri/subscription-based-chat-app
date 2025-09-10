@@ -1,5 +1,5 @@
 import { Entity, Column, OneToOne, JoinColumn, PrimaryColumn } from 'typeorm';
-import { User } from './User';
+import { User } from '../../users/entities/User';
 
 @Entity('suspended')
 export class Suspended {

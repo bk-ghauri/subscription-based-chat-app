@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { CreateConversationDto } from './dto/create-conversation.dto';
@@ -10,26 +11,25 @@ import { DataSource, In, Repository } from 'typeorm';
 import { ConversationMember } from '@app/conversation-members/entities/conversation-member.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Conversation } from './entities/conversation.entity';
-import { User } from '@app/typeorm/entities/User';
+import { User } from '@app/users/entities/User';
 import { AccountType } from '@app/typeorm/entities/AccountType';
 import { ConvMemberDto } from '@app/conversation-members/dto/conversation-member.dto';
+import { ConversationMembersService } from '@app/conversation-members/conversation-members.service';
+import { UserService } from '@app/users/users.service';
 
 @Injectable()
 export class ConversationsService {
   constructor(
-    @InjectRepository(ConversationMember)
-    private readonly conversationMemberRepository: Repository<ConversationMember>,
-
     @InjectRepository(Conversation)
     private readonly conversationRepository: Repository<Conversation>,
 
     @InjectRepository(AccountType)
     private readonly accountTypeRepository: Repository<AccountType>,
 
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-
+    private readonly conversationMemberService: ConversationMembersService,
+    private readonly userService: UserService,
     private readonly dataSource: DataSource,
+    private readonly logger = new Logger(ConversationsService.name),
   ) {}
 
   // Helper: format response
@@ -104,12 +104,14 @@ export class ConversationsService {
         );
       }
 
-      const memberRows = await this.conversationMemberRepository.find({
-        where: { conversation_id: conv.conversation_id },
-        relations: ['user'],
-      });
+      const memberRows =
+        await this.conversationMemberService.getMembersByConversationId(
+          conv.conversation_id,
+        );
 
-      console.log('DM already exists between these users');
+      this.logger.log(
+        `DM between ${userId} and ${otherUserId} already exists.`,
+      );
       return this.formatConversationResponse(conv, memberRows);
     }
 
@@ -192,9 +194,8 @@ export class ConversationsService {
     if (!uniqueIds.includes(userId)) uniqueIds.unshift(userId);
 
     // Validate members exist
-    const users = await this.userRepository.find({
-      where: { user_id: In(uniqueIds) },
-    });
+    const users = await this.userService.findUsersByIds(uniqueIds);
+
     if (users.length !== uniqueIds.length) {
       throw new BadRequestException('One or more memberIds are invalid.');
     }
@@ -247,9 +248,11 @@ export class ConversationsService {
       return { success: false, message: 'Conversation not found' };
     }
 
-    const membership = await this.conversationMemberRepository.findOne({
-      where: { conversation_id: conversationId, user_id: userId },
-    });
+    const membership =
+      await this.conversationMemberService.getConversationMembership(
+        conversationId,
+        userId,
+      );
 
     if (!membership) {
       return {
@@ -262,16 +265,8 @@ export class ConversationsService {
   }
 
   async findByUser(userId: string) {
-    console.log(`Fetching conversations for user: ${userId}`);
-    const memberships = await this.conversationMemberRepository.find({
-      where: { user_id: userId },
-      relations: [
-        'conversation',
-        'conversation.members',
-        'conversation.created_by',
-      ],
-      order: { conversation: { created_at: 'DESC' } },
-    });
+    const memberships =
+      await this.conversationMemberService.getUserMemberships(userId);
 
     return memberships.map((m) => ({
       id: m.conversation.conversation_id,
@@ -289,8 +284,12 @@ export class ConversationsService {
     return `This action returns all conversations`;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} conversation`;
+  findOne(id: string) {
+    return this.conversationRepository.findOne({
+      where: { conversation_id: id },
+      relations: ['created_by'],
+    []
+    });
   }
 
   update(id: number, updateConversationDto: UpdateConversationDto) {

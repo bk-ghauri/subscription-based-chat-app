@@ -4,8 +4,9 @@ import {
   Column,
   ManyToOne,
   OneToMany,
+  DeleteDateColumn,
 } from 'typeorm';
-import { User } from '@app/typeorm/entities/User';
+import { User } from '@app/users/entities/User';
 import { Conversation } from '@app/conversations/entities/conversation.entity';
 import { Attachment } from '@app/typeorm/entities/Attachment';
 
@@ -29,7 +30,7 @@ export class Message {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @DeleteDateColumn()
   deleted_at: Date;
 
   @Column({

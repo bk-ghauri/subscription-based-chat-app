@@ -12,7 +12,7 @@ import { Conversation } from '@app/conversations/entities/conversation.entity';
 import { ConversationMember } from '@app/conversation-members/entities/conversation-member.entity';
 import { Attachment } from './typeorm/entities/Attachment';
 import { Subscription } from './typeorm/entities/Subscription';
-import { User } from './typeorm/entities/User';
+import { User } from './users/entities/User';
 import { ConfigModule } from '@nestjs/config';
 import { MessagesModule } from './messages/messages.module';
 import { ConversationsModule } from './conversations/conversations.module';

@@ -1,11 +1,49 @@
 import { Injectable } from '@nestjs/common';
 import { CreateConversationMemberDto } from './dto/create-conversation-member.dto';
 import { UpdateConversationMemberDto } from './dto/update-conversation-member.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { ConversationMember } from './entities/conversation-member.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class ConversationMembersService {
+  constructor(
+    @InjectRepository(ConversationMember)
+    private readonly conversationMemberRepository: Repository<ConversationMember>,
+  ) {}
+
   create(createConversationMemberDto: CreateConversationMemberDto) {
     return 'This action adds a new conversationMember';
+  }
+
+  async getMembersByConversationId(conversationId: string) {
+    return await this.conversationMemberRepository.find({
+      where: { conversation_id: conversationId },
+      relations: ['user'], // eager-load user details
+    });
+  }
+
+  async getConversationMembership(conversationId: string, userId: string) {
+    return await this.conversationMemberRepository.findOneBy({
+      conversation_id: conversationId,
+      user_id: userId,
+    });
+  }
+
+  async getUserMemberships(userId: string) {
+    return await this.conversationMemberRepository.find({
+      where: { user_id: userId },
+      relations: [
+        'conversation',
+        'conversation.members',
+        'conversation.created_by',
+      ],
+      order: {
+        conversation: {
+          created_at: 'DESC',
+        },
+      },
+    });
   }
 
   findAll() {

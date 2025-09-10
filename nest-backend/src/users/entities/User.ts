@@ -8,10 +8,10 @@ import {
   BeforeInsert,
 } from 'typeorm';
 import { Message } from '@app/messages/entities/message.entity';
-import { Subscription } from './Subscription';
-import { AccountType } from './AccountType';
-import { Suspended } from './Suspended';
-import { Attachment } from './Attachment';
+import { Subscription } from '../../typeorm/entities/Subscription';
+import { AccountType } from '../../typeorm/entities/AccountType';
+import { Suspended } from '../../typeorm/entities/Suspended';
+import { Attachment } from '../../typeorm/entities/Attachment';
 import { ConversationMember } from '@app/conversation-members/entities/conversation-member.entity';
 
 import * as bcrypt from 'bcrypt';

@@ -6,7 +6,7 @@ const SERVER_URL = 'http://localhost:3000';
 
 // Insert the JWT you got from your REST login
 const TOKEN =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmMmMwMjBlMS01NDc3LTRkYTctOGIwNS1mNjg1YTI1YzdmNWYiLCJpYXQiOjE3NTc0MjQ1MTQsImV4cCI6MTc1NzQzNTMxNH0.nKtg1nKqYqSIA04QtRR7ZnGgPi14AwKMbJYf-0xyzyM';
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmMmMwMjBlMS01NDc3LTRkYTctOGIwNS1mNjg1YTI1YzdmNWYiLCJpYXQiOjE3NTc0ODY2ODAsImV4cCI6MTc1NzQ5NzQ4MH0.4et_DpRWqyiYpU4n64_xUAIjtPWtonAQDvMRVoEm2is';
 // Conversation you already created via REST
 const CONVERSATION_ID = 'c883cb76-c634-48f4-9287-a098db33bad0';
 
@@ -22,10 +22,8 @@ const socket = io(SERVER_URL, {
 /**
  * 2. Connection lifecycle events
  */
-socket.on('connect', () => {
-  console.log('✅ Connected to server with ID:', socket.id);
-
-  // Join a conversation right after connecting
+socket.on('authenticated', () => {
+  console.log('✅ Connected:', socket.id);
   socket.emit('joinRoom', { conversationId: CONVERSATION_ID }, (response) => {
     console.log('➡️ joinRoom response:', response);
 
