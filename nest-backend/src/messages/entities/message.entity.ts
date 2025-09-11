@@ -6,9 +6,11 @@ import {
   OneToMany,
   DeleteDateColumn,
 } from 'typeorm';
-import { User } from '@app/users/entities/User';
+import { User } from '@app/users/entities/user.entity';
 import { Conversation } from '@app/conversations/entities/conversation.entity';
-import { Attachment } from '@app/typeorm/entities/Attachment';
+import { Attachment } from '@app/common/entities/Attachment';
+import { MessageStatus } from '@app/message-status/entities/message-status.entity';
+import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
 
 @Entity()
 export class Message {
@@ -24,6 +26,9 @@ export class Message {
   @ManyToOne(() => User, (user) => user.messages, { onDelete: 'SET NULL' })
   sender: User;
 
+  @IsString()
+  @IsOptional()
+  @MaxLength(5000)
   @Column({ type: 'text', nullable: true })
   body: string | null;
 
@@ -33,16 +38,17 @@ export class Message {
   @DeleteDateColumn()
   deleted_at: Date;
 
-  @Column({
-    type: 'enum',
-    enum: ['SENT', 'DELIVERED', 'READ'],
-    default: 'SENT',
-  })
-  message_status: string;
-
+  @IsBoolean()
   @Column({ default: false })
   is_removed: boolean;
 
+  @IsBoolean()
+  @Column({ default: false })
+  read_by_all: boolean;
+
   @OneToMany(() => Attachment, (file) => file.message)
   attachments: Attachment[];
+
+  @OneToMany(() => MessageStatus, (status) => status.message)
+  statuses: MessageStatus[];
 }

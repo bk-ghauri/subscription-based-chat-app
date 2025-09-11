@@ -5,16 +5,17 @@ import {
   OneToMany,
   ManyToOne,
 } from 'typeorm';
-import { User } from '@app/users/entities/User';
+import { User } from '@app/users/entities/user.entity';
 import { Message } from '@app/messages/entities/message.entity';
 import { ConversationMember } from '@app/conversation-members/entities/conversation-member.entity';
+import { ConversationTypeEnum } from '../types/conversation.enum';
 
 @Entity()
 export class Conversation {
   @PrimaryGeneratedColumn('uuid')
   conversation_id: string;
 
-  @Column({ type: 'enum', enum: ['DM', 'GROUP'] })
+  @Column({ type: 'enum', enum: ConversationTypeEnum })
   type: string;
 
   @Column({ type: 'text', nullable: true })

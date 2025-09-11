@@ -11,11 +11,12 @@ import { DataSource, In, Repository } from 'typeorm';
 import { ConversationMember } from '@app/conversation-members/entities/conversation-member.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Conversation } from './entities/conversation.entity';
-import { User } from '@app/users/entities/User';
-import { AccountType } from '@app/typeorm/entities/AccountType';
+import { User } from '@app/users/entities/user.entity';
+import { AccountType } from '@app/account-type/entities/account-type.entity';
 import { ConvMemberDto } from '@app/conversation-members/dto/conversation-member.dto';
 import { ConversationMembersService } from '@app/conversation-members/conversation-members.service';
 import { UserService } from '@app/users/users.service';
+import { ConversationTypeEnum } from './types/conversation.enum'; 
 
 @Injectable()
 export class ConversationsService {
@@ -43,7 +44,6 @@ export class ConversationsService {
       displayName: r.user.display_name,
       avatar: r.user.avatar_url ?? null,
       role: r.conversation_role as 'ADMIN' | 'MEMBER',
-      statusMessage: r.status_message ?? null,
     }));
 
     return {
@@ -121,6 +121,7 @@ export class ConversationsService {
       const users = await manager.find(User, {
         where: { user_id: In([userId, otherUserId]) },
       });
+      
       if (users.length !== 2) {
         throw new NotFoundException('One or both users do not exist.');
       }
@@ -278,10 +279,6 @@ export class ConversationsService {
         displayName: m.conversation.created_by.display_name,
       },
     }));
-  }
-
-  findAll() {
-    return `This action returns all conversations`;
   }
 
   findOne(id: string) {

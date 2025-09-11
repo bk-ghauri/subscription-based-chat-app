@@ -16,6 +16,9 @@ import { Inject, Logger } from '@nestjs/common';
 import jwtConfig from '@app/auth/config/jwt.config';
 import * as config from '@nestjs/config';
 import * as jwt from 'jsonwebtoken';
+import { MessageStatusService } from '@app/message-status/message-status.service';
+import { MessageStatusEnum } from '@app/message-status/types/message-status.enum';
+import { ConversationTypeEnum } from '@app/conversations/types/conversation.enum';
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class MessagesGateway implements OnGatewayConnection {
@@ -26,10 +29,12 @@ export class MessagesGateway implements OnGatewayConnection {
     private readonly jwtConfiguration: config.ConfigType<typeof jwtConfig>,
     private readonly messagesService: MessagesService,
     //private jwtService: JwtService,
-    private userService: UserService,
-    private conversationsService: ConversationsService,
-    private messageService: MessagesService,
+    private readonly userService: UserService,
+    private readonly conversationsService: ConversationsService,
+    private readonly messageService: MessagesService,
+    private readonly messageStatusService: MessageStatusService,
     private readonly logger = new Logger(MessagesGateway.name),
+    private onlineUsers = new Map<string, Set<string>>(), // userId -> socketIds
   ) {}
 
   async handleConnection(client: Socket) {
@@ -53,42 +58,49 @@ export class MessagesGateway implements OnGatewayConnection {
         return { success: false, message: 'Unauthorized' };
       }
 
-      // client.data.user = {
-      //   id: user.user_id,
-      //   displayName: user.display_name,
-      // };
-
       (client as any).user = {
         id: user.user_id,
         displayName: user.display_name,
       };
 
+      //Presence tracking
+      const socketId = client.id;
+
+      if (!this.onlineUsers.has(user.user_id)) {
+        this.onlineUsers.set(user.user_id, new Set());
+        this.server.emit('userOnline', { userId: user.user_id });
+      }
+
+      this.onlineUsers.get(user.user_id)!.add(socketId);
+
       this.logger.log(`${user.display_name} connected`);
+
       client.emit('authenticated', { success: true });
     } catch (err) {
       this.logger.error('Invalid client connection:', err.message);
       client.disconnect();
     }
   }
-  @SubscribeMessage('createMessage')
-  async create(
-    @MessageBody() dto: CreateMessageDto,
-    @ConnectedSocket() client: Socket,
-  ) {
-    //const user = client.data.user;
 
+  handleDisconnect(client: Socket) {
     const user = (client as any).user;
+    if (!user) return;
 
-    if (!user) {
-      return { success: false, message: 'Unauthorized' };
+    const socketId = client.id;
+    const userSockets = this.onlineUsers.get(user.id);
+
+    if (userSockets) {
+      userSockets.delete(socketId);
+      if (userSockets.size === 0) {
+        this.onlineUsers.delete(user.id);
+        this.server.emit('userOffline', { userId: user.id });
+        this.logger.log(`${user.displayName} disconnected (offline)`);
+      } else {
+        this.logger.log(
+          `${user.displayName} disconnected (still online in other tabs)`,
+        );
+      }
     }
-
-    const message = await this.messagesService.create({
-      ...dto,
-      senderId: user.id,
-    });
-    this.server.in(dto.conversationId).emit('message', message);
-    return message;
   }
 
   @SubscribeMessage('joinRoom')
@@ -96,7 +108,6 @@ export class MessagesGateway implements OnGatewayConnection {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { conversationId: string },
   ) {
-    //const user = client.data.user;
     const user = (client as any).user;
 
     if (!user) {
@@ -121,12 +132,32 @@ export class MessagesGateway implements OnGatewayConnection {
     return { success: true, room: data.conversationId };
   }
 
+  @SubscribeMessage('sendMessage')
+  async handleSendMessage(
+    @MessageBody() dto: CreateMessageDto,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const user = (client as any).user;
+    if (!user) {
+      return { success: false, message: 'Unauthorized' };
+    }
+
+    const message = await this.messagesService.create({
+      ...dto,
+      senderId: user.id,
+    });
+
+    // Emit to recipients via receiveMessage
+    this.server.in(dto.conversationId).emit('receiveMessage', message);
+
+    return { success: true, message };
+  }
+
   @SubscribeMessage('typing')
   async typing(
     @MessageBody() body: { conversationId: string; isTyping: boolean },
     @ConnectedSocket() client: Socket,
   ) {
-    //const user = client.data.user;
     const user = (client as any).user;
 
     if (!user) return;
@@ -137,10 +168,72 @@ export class MessagesGateway implements OnGatewayConnection {
     });
   }
 
-  @SubscribeMessage('findAllMessages')
-  findAll() {
-    return this.messagesService.findAll();
+  @SubscribeMessage('messageDelivered')
+  async handleDelivered(
+    @MessageBody() body: { messageId: string; conversationId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const user = (client as any).user;
+    if (!user) return;
+
+    const status = MessageStatusEnum.DELIVERED;
+
+    await this.messageStatusService.updateStatus(
+      body.messageId,
+      user.id,
+      status,
+    );
+
+    this.server.in(body.conversationId).emit('messageStatusUpdate', {
+      messageId: body.messageId,
+      userId: user.id,
+      status: 'delivered',
+    });
   }
+
+  @SubscribeMessage('messageRead')
+  async handleRead(
+    @MessageBody() body: { messageId: string; conversationId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const user = (client as any).user;
+    if (!user) return;
+
+    const status = MessageStatusEnum.READ;
+
+    await this.messageStatusService.updateStatus(
+      body.messageId,
+      user.id,
+      status,
+    );
+
+    this.server.in(body.conversationId).emit('messageStatusUpdate', {
+      messageId: body.messageId,
+      userId: user.id,
+      status: 'read',
+    });
+
+    // Optionally emit ReadByAll update
+
+    const message = await this.messageService.findByIdWithConversation(
+      body.messageId,
+    );
+    if (message) {
+      if (
+        message.conversation.type === ConversationTypeEnum.GROUP &&
+        message.read_by_all
+      ) {
+        this.server.in(body.conversationId).emit('messageReadByAll', {
+          messageId: body.messageId,
+        });
+      }
+    }
+  }
+
+  // @SubscribeMessage('findAllMessages')
+  // findAll() {
+  //   return this.messagesService.findAll();
+  // }
 
   @SubscribeMessage('removeMessage')
   async handleRemoveMessage(

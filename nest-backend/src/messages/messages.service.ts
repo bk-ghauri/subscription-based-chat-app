@@ -82,17 +82,34 @@ export class MessagesService {
     };
   }
 
-  findAll() {
-    return `This action returns all messages`;
+  async markReadByAll(messageId: string) {
+    const result = await this.messageRepository.update(messageId, {
+      read_by_all: true,
+    });
+
+    if (result.affected === 0) {
+      throw new NotFoundException(`Message with ID ${messageId} not found`);
+    }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} message`;
+  async findByIdWithConversation(messageId: string) {
+    return this.messageRepository.findOne({
+      where: { message_id: messageId },
+      relations: ['conversation'],
+    });
   }
 
-  update(id: number, updateMessageDto: UpdateMessageDto) {
-    return `This action updates a #${id} message`;
-  }
+  // findAll() {
+  //   return `This action returns all messages`;
+  // }
+
+  // findOne(id: number) {
+  //   return `This action returns a #${id} message`;
+  // }
+
+  // update(id: number, updateMessageDto: UpdateMessageDto) {
+  //   return `This action updates a #${id} message`;
+  // }
 
   async remove(id: string) {
     const result = await this.messageRepository.softDelete(id);

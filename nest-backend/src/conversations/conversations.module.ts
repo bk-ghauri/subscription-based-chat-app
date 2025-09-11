@@ -4,8 +4,8 @@ import { ConversationsController } from './conversations.controller';
 import { ConversationMember } from '@app/conversation-members/entities/conversation-member.entity';
 import { Conversation } from './entities/conversation.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from '@app/users/entities/User';
-import { AccountType } from '@app/typeorm/entities/AccountType';
+import { User } from '@app/users/entities/user.entity';
+import { AccountType } from '@app/common/entities/AccountType';
 
 @Module({
   imports: [

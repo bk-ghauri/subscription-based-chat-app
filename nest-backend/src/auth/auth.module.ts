@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from '@app/users/entities/User';
+import { User } from '@app/users/entities/user.entity';
 import { LocalStrategy } from './utils/LocalStrategy';
 import { JwtModule } from '@nestjs/jwt';
 import jwtConfig from './config/jwt.config';
@@ -11,7 +11,7 @@ import { JwtStrategy } from './utils/JwtStrategy';
 import refreshJwtConfig from './config/refresh-jwt.config';
 import { RefreshJwtStrategy } from './utils/RefreshStrategy';
 import { UserService } from '@app/users/users.service';
-import { AccountType } from '@app/typeorm/entities/AccountType';
+import { AccountType } from '@app/common/entities/AccountType';
 
 @Module({
   imports: [

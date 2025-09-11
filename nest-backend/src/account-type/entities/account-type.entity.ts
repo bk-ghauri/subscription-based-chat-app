@@ -1,5 +1,6 @@
 import { Entity, PrimaryColumn, Column, OneToOne, JoinColumn } from 'typeorm';
-import { User } from '../../users/entities/User';
+import { User } from '../../users/entities/user.entity';
+import { AccountRole } from '../types/account-type.enum';
 
 @Entity('account_types')
 export class AccountType {
@@ -12,8 +13,8 @@ export class AccountType {
 
   @Column({
     type: 'enum',
-    enum: ['FREE', 'PREMIUM', 'ADMIN'],
-    default: 'FREE',
+    enum: AccountRole,
+    default: AccountRole.FREE,
   })
   role: string;
 }

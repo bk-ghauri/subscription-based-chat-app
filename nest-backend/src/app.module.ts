@@ -6,19 +6,21 @@ import { UsersModule } from '@app/users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { AttachmentsModule } from './attachments/attachments.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
-import { AccountType } from './typeorm/entities/AccountType';
-import { Suspended } from './typeorm/entities/Suspended';
+import { AccountType } from './common/entities/AccountType';
+import { Suspended } from './common/entities/Suspended';
 import { Conversation } from '@app/conversations/entities/conversation.entity';
 import { ConversationMember } from '@app/conversation-members/entities/conversation-member.entity';
-import { Attachment } from './typeorm/entities/Attachment';
-import { Subscription } from './typeorm/entities/Subscription';
-import { User } from './users/entities/User';
+import { Attachment } from './common/entities/Attachment';
+import { Subscription } from './common/entities/Subscription';
+import { User } from './users/entities/user.entity';
 import { ConfigModule } from '@nestjs/config';
 import { MessagesModule } from './messages/messages.module';
 import { ConversationsModule } from './conversations/conversations.module';
 import { ConversationMembersModule } from './conversation-members/conversation-members.module';
 import jwtConfig from './auth/config/jwt.config';
 import { Message } from './messages/entities/message.entity';
+import { MessageStatusModule } from './message-status/message-status.module';
+import { AccountTypeModule } from './account-type/account-type.module';
 
 @Module({
   imports: [
@@ -53,6 +55,8 @@ import { Message } from './messages/entities/message.entity';
     MessagesModule,
     ConversationsModule,
     ConversationMembersModule,
+    MessageStatusModule,
+    AccountTypeModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -6,38 +6,57 @@ import {
   Unique,
   OneToOne,
   BeforeInsert,
+  BeforeUpdate,
 } from 'typeorm';
 import { Message } from '@app/messages/entities/message.entity';
-import { Subscription } from '../../typeorm/entities/Subscription';
-import { AccountType } from '../../typeorm/entities/AccountType';
-import { Suspended } from '../../typeorm/entities/Suspended';
-import { Attachment } from '../../typeorm/entities/Attachment';
+import { Subscription } from '../../common/entities/Subscription';
+import { AccountType } from '@app/account-type/entities/account-type.entity';
+import { Suspended } from '../../common/entities/Suspended';
+import { Attachment } from '../../common/entities/Attachment';
 import { ConversationMember } from '@app/conversation-members/entities/conversation-member.entity';
 
 import * as bcrypt from 'bcrypt';
+import { MessageStatus } from '@app/message-status/entities/message-status.entity';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  IsUrl,
+  Length,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 @Entity()
 export class User {
   @PrimaryGeneratedColumn('uuid')
   user_id: string;
 
-  @Column({ unique: true })
+  @IsEmail()
+  @MaxLength(320)
+  @Column({ unique: true, length: 320 })
   email: string;
 
-  @Column({ nullable: true })
-  google_id: string;
-
+  @IsString()
+  @MinLength(60) // bcrypt hashed length baseline (guard)
   @Column()
   password: string;
 
-  @Column({ type: 'text', nullable: true })
-  hashed_refresh_token: string | null;
+  @IsString()
+  @MaxLength(1024)
+  @Column({ type: 'text' })
+  hashed_refresh_token: string;
 
-  @Column({ unique: true, nullable: false })
+  @IsString()
+  @Length(3, 50)
+  @Column({ nullable: false, unique: true, length: 50 })
   display_name: string;
 
-  @Column({ nullable: true })
-  avatar_url: string;
+  @IsOptional()
+  @IsUrl()
+  @MaxLength(2048)
+  @Column({ nullable: true, length: 2048 })
+  avatar_url: string | null;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
@@ -60,6 +79,10 @@ export class User {
   @OneToOne(() => Suspended, (suspended) => suspended.user)
   suspended: Suspended;
 
+  @OneToMany(() => MessageStatus, (status) => status.receiver)
+  messageStatuses: MessageStatus[];
+
+  @BeforeUpdate()
   @BeforeInsert()
   async hashPassword() {
     this.password = await bcrypt.hash(this.password, 10);
