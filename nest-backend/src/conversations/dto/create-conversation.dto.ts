@@ -6,10 +6,11 @@ import {
   IsString,
   IsUUID,
 } from 'class-validator';
+import { ConversationTypeEnum } from '../types/conversation.enum';
 
 export class CreateConversationDto {
-  @IsEnum(['DM', 'GROUP'])
-  type: 'DM' | 'GROUP';
+  @IsEnum(ConversationTypeEnum)
+  type: ConversationTypeEnum;
 
   @IsOptional()
   @IsString()

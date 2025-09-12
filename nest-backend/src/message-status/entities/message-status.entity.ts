@@ -9,10 +9,10 @@ import {
 import { Message } from '@app/messages/entities/message.entity';
 import { User } from '@app/users/entities/user.entity';
 import { MessageStatusEnum } from '../types/message-status.enum';
-import { IsEnum } from 'class-validator';
+import { IsDate, IsEnum } from 'class-validator';
 
 @Entity('message_status')
-@Index(['messageId', 'receiverId'], { unique: true }) // composite unique index (also serves as PK)
+@Index(['message_id', 'receiver_id'], { unique: true }) // composite unique index (also serves as PK)
 export class MessageStatus {
   @PrimaryColumn('uuid')
   message_id: string;
@@ -22,12 +22,14 @@ export class MessageStatus {
 
   @ManyToOne(() => Message, (message) => message.statuses, {
     onDelete: 'CASCADE',
+    nullable: false,
   })
   @JoinColumn({ name: 'message_id' })
   message: Message;
 
   @ManyToOne(() => User, (user) => user.messageStatuses, {
     onDelete: 'CASCADE',
+    nullable: false,
   })
   @JoinColumn({ name: 'receiver_id' })
   receiver: User;
@@ -41,9 +43,11 @@ export class MessageStatus {
   })
   status: MessageStatusEnum;
 
+  @IsDate()
   @Column({ type: 'timestamp', nullable: true })
   delivered_at: Date | null;
 
+  @IsDate()
   @Column({ type: 'timestamp', nullable: true })
   read_at: Date | null;
 }

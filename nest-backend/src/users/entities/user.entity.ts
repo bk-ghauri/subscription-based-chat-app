@@ -9,16 +9,18 @@ import {
   BeforeUpdate,
 } from 'typeorm';
 import { Message } from '@app/messages/entities/message.entity';
-import { Subscription } from '../../common/entities/Subscription';
+import { Subscription } from '../../subscriptions/entities/subscription.entity';
 import { AccountType } from '@app/account-type/entities/account-type.entity';
-import { Suspended } from '../../common/entities/Suspended';
-import { Attachment } from '../../common/entities/Attachment';
+import { Suspended } from '../../common/entities/suspended.entity';
+import { Attachment } from '../../attachments/entities/attachment.entity';
 import { ConversationMember } from '@app/conversation-members/entities/conversation-member.entity';
 
 import * as bcrypt from 'bcrypt';
 import { MessageStatus } from '@app/message-status/entities/message-status.entity';
 import {
+  IsDate,
   IsEmail,
+  IsNotEmpty,
   IsOptional,
   IsString,
   IsUrl,
@@ -34,7 +36,7 @@ export class User {
 
   @IsEmail()
   @MaxLength(320)
-  @Column({ unique: true, length: 320 })
+  @Column({ nullable: false, unique: true, length: 320 })
   email: string;
 
   @IsString()
@@ -42,11 +44,13 @@ export class User {
   @Column()
   password: string;
 
+  @IsOptional()
   @IsString()
   @MaxLength(1024)
-  @Column({ type: 'text' })
-  hashed_refresh_token: string;
+  @Column({ type: 'text', nullable: true })
+  hashed_refresh_token: string | null;
 
+  @IsNotEmpty()
   @IsString()
   @Length(3, 50)
   @Column({ nullable: false, unique: true, length: 50 })
@@ -55,9 +59,10 @@ export class User {
   @IsOptional()
   @IsUrl()
   @MaxLength(2048)
-  @Column({ nullable: true, length: 2048 })
+  @Column({ type: 'varchar', nullable: true, length: 2048 })
   avatar_url: string | null;
 
+  @IsDate()
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 

@@ -15,41 +15,48 @@ import {
 import { UserService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import {
+  ApiBearerAuth,
+  ApiForbiddenResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
+import { UserResponseDto } from './dto/user-response.dto';
 
+@UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UsersController {
   constructor(private readonly userService: UserService) {}
-  @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.userService.create(createUserDto);
-  }
 
-  @UseGuards(JwtAuthGuard)
+  // @Post()
+  // create(@Body() createUserDto: CreateUserDto) {
+  //   return this.userService.create(createUserDto);
+  // }
+
+  @ApiOperation({ summary: `Used to view user's account details` })
+  @ApiOkResponse({
+    description: 'Profile returned',
+    type: UserResponseDto,
+  })
+  @ApiForbiddenResponse({ description: 'Unauthorized' })
+  @ApiBearerAuth()
   @Get('profile')
   getProfile(@Req() req) {
-    return this.userService.findOne(req.user.id);
+    return this.userService.returnProfile(req.user.id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.userService.update(id, updateUserDto);
-  }
-  // // @SetMetadata('role', [Role.ADMIN])
-  // @Roles(Role.EDITOR)
-  // // @UseGuards(RolesGuard)
-  // // @UseGuards(JwtAuthGuard)
+  // @Patch(':id')
+  // update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  //   return this.userService.update(id, updateUserDto);
+  // }
 
-  @Delete(':id')
-  @UseGuards(JwtAuthGuard)
-  async remove(@Param('id') id: string, @Request() req) {
-    const userIdFromToken = req.user.id; // comes from JWT payload
-    //const isAdmin = req.user.role === 'ADMIN'; // optional if you support roles
-
-    // only allow deleting own account (unless admin)
-    if (userIdFromToken !== id) {
-      //&& !isAdmin)
-      throw new ForbiddenException('You can only delete your own account');
-    }
+  @ApiOperation({ summary: 'Used to delete a user form database' })
+  @ApiOkResponse({ description: 'Account deleted successfully' })
+  @ApiBearerAuth()
+  @Delete()
+  async remove(@Request() req) {
+    const userIdFromToken = req.user.id;
     return this.userService.remove(userIdFromToken);
   }
 }

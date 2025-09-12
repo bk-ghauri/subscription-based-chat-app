@@ -6,12 +6,12 @@ import { UsersModule } from '@app/users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { AttachmentsModule } from './attachments/attachments.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
-import { AccountType } from './common/entities/AccountType';
-import { Suspended } from './common/entities/Suspended';
+import { AccountType } from '@app/account-type/entities/account-type.entity';
+import { Suspended } from './common/entities/suspended.entity';
 import { Conversation } from '@app/conversations/entities/conversation.entity';
 import { ConversationMember } from '@app/conversation-members/entities/conversation-member.entity';
-import { Attachment } from './common/entities/Attachment';
-import { Subscription } from './common/entities/Subscription';
+import { Attachment } from './attachments/entities/attachment.entity';
+import { Subscription } from './subscriptions/entities/subscription.entity';
 import { User } from './users/entities/user.entity';
 import { ConfigModule } from '@nestjs/config';
 import { MessagesModule } from './messages/messages.module';
@@ -21,6 +21,7 @@ import jwtConfig from './auth/config/jwt.config';
 import { Message } from './messages/entities/message.entity';
 import { MessageStatusModule } from './message-status/message-status.module';
 import { AccountTypeModule } from './account-type/account-type.module';
+import { MessageStatus } from './message-status/entities/message-status.entity';
 
 @Module({
   imports: [
@@ -40,8 +41,10 @@ import { AccountTypeModule } from './account-type/account-type.module';
         Attachment,
         Subscription,
         Message,
+        MessageStatus,
       ],
       synchronize: false,
+      dropSchema: false,
     }),
     ConfigModule.forRoot({
       isGlobal: true, // Makes ConfigModule available in every module

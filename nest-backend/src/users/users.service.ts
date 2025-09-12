@@ -4,7 +4,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { User } from '@app/users/entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { AccountType } from '@app/common/entities/AccountType';
+import { AccountType } from '@app/account-type/entities/account-type.entity';
+import { UserResponseDto } from './dto/user-response.dto';
+import { AccountRole } from '@app/account-type/types/account-type.enum';
 
 @Injectable()
 export class UserService {
@@ -29,10 +31,10 @@ export class UserService {
     return user;
   }
 
-  async update(user_id: string, updateUserDto: UpdateUserDto) {
-    await this.UserRepo.update({ user_id }, updateUserDto);
-    return this.UserRepo.findOneBy({ user_id });
-  }
+  // async update(user_id: string, updateUserDto: UpdateUserDto) {
+  //   await this.UserRepo.update({ user_id }, updateUserDto);
+  //   return this.UserRepo.findOneBy({ user_id });
+  // }
 
   async remove(user_id: string) {
     const result = await this.UserRepo.delete({ user_id });
@@ -70,12 +72,33 @@ export class UserService {
       select: [
         'user_id',
         'email',
-        'google_id',
         'display_name',
         'avatar_url',
         'created_at',
         'accountType',
       ],
     });
+  }
+
+  async returnProfile(user_id: string): Promise<UserResponseDto> {
+    const user = await this.UserRepo.findOne({
+      where: { user_id },
+      relations: ['accountType'],
+      select: ['user_id', 'email', 'display_name', 'avatar_url', 'created_at'],
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${user_id} not found`);
+    }
+
+    const response: UserResponseDto = {
+      email: user.email,
+      display_name: user.display_name,
+      avatar_url: user.avatar_url,
+      created_at: user.created_at,
+      accountType: user.accountType?.role as AccountRole,
+    };
+
+    return response;
   }
 }

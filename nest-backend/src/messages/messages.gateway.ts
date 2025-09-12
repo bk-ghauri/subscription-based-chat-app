@@ -24,6 +24,10 @@ import { ConversationTypeEnum } from '@app/conversations/types/conversation.enum
 export class MessagesGateway implements OnGatewayConnection {
   @WebSocketServer()
   server: Server;
+
+  private readonly logger = new Logger(MessagesGateway.name);
+  private onlineUsers = new Map<string, Set<string>>(); // userId -> socketIds
+
   constructor(
     @Inject(jwtConfig.KEY)
     private readonly jwtConfiguration: config.ConfigType<typeof jwtConfig>,
@@ -33,8 +37,6 @@ export class MessagesGateway implements OnGatewayConnection {
     private readonly conversationsService: ConversationsService,
     private readonly messageService: MessagesService,
     private readonly messageStatusService: MessageStatusService,
-    private readonly logger = new Logger(MessagesGateway.name),
-    private onlineUsers = new Map<string, Set<string>>(), // userId -> socketIds
   ) {}
 
   async handleConnection(client: Socket) {

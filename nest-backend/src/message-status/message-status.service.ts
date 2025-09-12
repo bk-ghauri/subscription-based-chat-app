@@ -10,7 +10,7 @@ import { Repository } from 'typeorm';
 export class MessageStatusService {
   constructor(
     @InjectRepository(MessageStatus)
-    private messageStatusRepo: Repository<MessageStatus>,
+    private messageStatusRepository: Repository<MessageStatus>,
 
     private readonly messageService: MessagesService,
   ) {}
@@ -30,14 +30,14 @@ export class MessageStatusService {
       update.read_at = new Date();
     }
 
-    await this.messageStatusRepo.update(
+    await this.messageStatusRepository.update(
       { message_id: messageId, receiver_id: receiverId },
       update,
     );
 
     // If status is READ, check if all recipients have read the message
     if (status === MessageStatusEnum.READ) {
-      const unreadCount = await this.messageStatusRepo.count({
+      const unreadCount = await this.messageStatusRepository.count({
         where: {
           message_id: messageId,
           status: Not(MessageStatusEnum.READ),

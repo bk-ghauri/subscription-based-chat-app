@@ -10,9 +10,10 @@ import { compare } from 'bcrypt';
 import { Repository } from 'typeorm';
 import refreshJwtConfig from './config/refresh-jwt.config';
 import * as config from '@nestjs/config';
-import { AuthJwtPayload } from './types/auth-jwtPayload';
+import { AuthJwtPayload } from '@app/auth/types/auth-jwtPayload';
 import * as argon2 from 'argon2';
 import { CreateUserDto } from '@app/users/dto/create-user.dto';
+import { LoginResponseDto } from '@app/auth/dto/login-response.dto';
 
 @Injectable()
 export class AuthService {
@@ -77,11 +78,13 @@ export class AuthService {
     const { accessToken, refreshToken } = await this.generateTokens(userId);
     const hashedRefreshToken = await argon2.hash(refreshToken);
     await this.userService.updateHashedRefreshToken(userId, hashedRefreshToken);
-    return {
-      id: userId,
-      accessToken,
-      refreshToken,
+    const response: LoginResponseDto = {
+      user_id: userId,
+      access_token: accessToken,
+      refresh_token: refreshToken,
     };
+
+    return response;
   }
 
   async generateTokens(userId: string) {
@@ -100,11 +103,12 @@ export class AuthService {
     const { accessToken, refreshToken } = await this.generateTokens(userId);
     const hashedRefreshToken = await argon2.hash(refreshToken);
     await this.userService.updateHashedRefreshToken(userId, hashedRefreshToken);
-    return {
-      id: userId,
-      accessToken,
-      refreshToken,
+    const response: LoginResponseDto = {
+      user_id: userId,
+      access_token: accessToken,
+      refresh_token: refreshToken,
     };
+    return response;
   }
 
   async validateRefreshToken(userId: string, refreshToken: string) {

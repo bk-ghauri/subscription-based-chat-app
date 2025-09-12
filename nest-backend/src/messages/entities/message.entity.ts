@@ -8,9 +8,15 @@ import {
 } from 'typeorm';
 import { User } from '@app/users/entities/user.entity';
 import { Conversation } from '@app/conversations/entities/conversation.entity';
-import { Attachment } from '@app/common/entities/Attachment';
+import { Attachment } from '@app/attachments/entities/attachment.entity';
 import { MessageStatus } from '@app/message-status/entities/message-status.entity';
-import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsDate,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 @Entity()
 export class Message {
@@ -32,6 +38,7 @@ export class Message {
   @Column({ type: 'text', nullable: true })
   body: string | null;
 
+  @IsDate()
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 

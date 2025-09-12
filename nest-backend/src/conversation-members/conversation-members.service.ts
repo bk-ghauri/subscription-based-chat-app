@@ -1,6 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { CreateConversationMemberDto } from './dto/create-conversation-member.dto';
-import { UpdateConversationMemberDto } from './dto/update-conversation-member.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ConversationMember } from './entities/conversation-member.entity';
 import { Repository } from 'typeorm';
@@ -11,10 +9,6 @@ export class ConversationMembersService {
     @InjectRepository(ConversationMember)
     private readonly conversationMemberRepository: Repository<ConversationMember>,
   ) {}
-
-  create(createConversationMemberDto: CreateConversationMemberDto) {
-    return 'This action adds a new conversationMember';
-  }
 
   async getMembersByConversationId(conversationId: string) {
     return await this.conversationMemberRepository.find({
@@ -46,19 +40,19 @@ export class ConversationMembersService {
     });
   }
 
-  findAll() {
-    return `This action returns all conversationMembers`;
-  }
+  // findAll() {
+  //   return `This action returns all conversationMembers`;
+  // }
 
-  findOne(id: number) {
-    return `This action returns a #${id} conversationMember`;
-  }
+  // findOne(id: number) {
+  //   return `This action returns a #${id} conversationMember`;
+  // }
 
-  update(id: number, updateConversationMemberDto: UpdateConversationMemberDto) {
-    return `This action updates a #${id} conversationMember`;
-  }
+  // update(id: number, updateConversationMemberDto: UpdateConversationMemberDto) {
+  //   return `This action updates a #${id} conversationMember`;
+  // }
 
-  remove(id: number) {
-    return `This action removes a #${id} conversationMember`;
-  }
+  // remove(id: number) {
+  //   return `This action removes a #${id} conversationMember`;
+  // }
 }

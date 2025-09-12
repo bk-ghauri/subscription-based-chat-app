@@ -27,28 +27,29 @@ export class ConversationsController {
   }
 
   // POST /conversations/dm
+
   @Post('dm')
-  async createDm(@Req() req: any, @Body() dto: CreateConversationDto) {
+  async createDm(@Req() req, @Body() dto: CreateConversationDto) {
     const userId = req.user?.id;
     return this.conversationsService.createDmConversation(userId, dto);
   }
 
   // POST /conversations/group
   @Post('group')
-  async createGroup(@Req() req: any, @Body() dto: CreateConversationDto) {
+  async createGroup(@Req() req, @Body() dto: CreateConversationDto) {
     const userId = req.user?.id;
     return this.conversationsService.createGroupConversation(userId, dto);
   }
 
   //  POST /groups/{groupId}/members
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.conversationsService.findOne(+id);
-  }
+  // @Get(':id')
+  // findOne(@Param('id') id: string) {
+  //   return this.conversationsService.findOne(id);
+  // }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.conversationsService.remove(+id);
-  }
+  // @Delete(':id')
+  // remove(@Param('id') id: string) {
+  //   return this.conversationsService.remove(id);
+  // }
 }

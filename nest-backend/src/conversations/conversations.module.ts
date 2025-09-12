@@ -5,7 +5,9 @@ import { ConversationMember } from '@app/conversation-members/entities/conversat
 import { Conversation } from './entities/conversation.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '@app/users/entities/user.entity';
-import { AccountType } from '@app/common/entities/AccountType';
+import { AccountType } from '@app/account-type/entities/account-type.entity';
+import { ConversationMembersService } from '@app/conversation-members/conversation-members.service';
+import { UserService } from '@app/users/users.service';
 
 @Module({
   imports: [
@@ -17,6 +19,6 @@ import { AccountType } from '@app/common/entities/AccountType';
     ]),
   ],
   controllers: [ConversationsController],
-  providers: [ConversationsService],
+  providers: [ConversationsService, ConversationMembersService, UserService],
 })
 export class ConversationsModule {}

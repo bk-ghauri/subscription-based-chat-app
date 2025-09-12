@@ -11,7 +11,7 @@ import { JwtStrategy } from './utils/JwtStrategy';
 import refreshJwtConfig from './config/refresh-jwt.config';
 import { RefreshJwtStrategy } from './utils/RefreshStrategy';
 import { UserService } from '@app/users/users.service';
-import { AccountType } from '@app/common/entities/AccountType';
+import { AccountType } from '@app/account-type/entities/account-type.entity';
 
 @Module({
   imports: [
