@@ -5,6 +5,7 @@ import {
   WebSocketServer,
   ConnectedSocket,
   OnGatewayConnection,
+  OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { MessagesService } from './messages.service';
 import { CreateMessageDto } from './dto/create-message.dto';
@@ -21,7 +22,9 @@ import { MessageStatusEnum } from '@app/message-status/types/message-status.enum
 import { ConversationTypeEnum } from '@app/conversations/types/conversation.enum';
 
 @WebSocketGateway({ cors: { origin: '*' } })
-export class MessagesGateway implements OnGatewayConnection {
+export class MessagesGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
@@ -232,11 +235,6 @@ export class MessagesGateway implements OnGatewayConnection {
     }
   }
 
-  // @SubscribeMessage('findAllMessages')
-  // findAll() {
-  //   return this.messagesService.findAll();
-  // }
-
   @SubscribeMessage('removeMessage')
   async handleRemoveMessage(
     @MessageBody() data: { messageId: string; conversationId: string },
@@ -248,14 +246,4 @@ export class MessagesGateway implements OnGatewayConnection {
       messageId: data.messageId,
     });
   }
-
-  // @SubscribeMessage('findOneMessage')
-  // findOne(@MessageBody() id: number) {
-  //   return this.messagesService.findOne(id);
-  // }
-
-  // @SubscribeMessage('updateMessage')
-  // update(@MessageBody() updateMessageDto: UpdateMessageDto) {
-  //   return this.messagesService.update(updateMessageDto.id, updateMessageDto);
-  // }
 }

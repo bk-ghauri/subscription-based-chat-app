@@ -30,18 +30,18 @@ import { LoginDto } from './dto/login.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Post('signup')
   @ApiOperation({ summary: 'Create user account and store it in database' })
   @ApiOkResponse({ description: 'Acount created', type: CreateUserDto })
-  @ApiConflictResponse({
-    description: 'An account already exists with this email',
+  @ApiBadRequestResponse({
+    description: 'An account already exists with this email or display name',
   })
-  @Post('signup')
   async signup(@Body() createUserDto: CreateUserDto) {
     return this.authService.signup(createUserDto);
   }
 
   @Public()
-  @HttpCode(HttpStatus.OK)
+  @Post('login')
   @ApiOperation({ summary: 'Login with username and password' })
   @ApiBody({ type: LoginDto })
   @ApiOkResponse({
@@ -52,32 +52,31 @@ export class AuthController {
     description: 'Invalid credentials',
   })
   @UseGuards(LocalAuthGuard)
-  @Post('login')
   async login(@Request() req) {
     return this.authService.login(req.user.id);
   }
 
+  @Post('refresh')
   @ApiOperation({
-    summary: 'Generate new refresh token using access token from header',
+    summary: 'Generate new refresh token using refresh token from database',
   })
   @ApiOkResponse({
     description: 'New refresh token generated',
     type: LoginResponseDto,
   })
   @ApiBearerAuth()
-  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  @ApiUnauthorizedResponse({ description: 'Invalid refresh token' })
   @UseGuards(RefreshAuthGuard)
-  @Post('refresh')
-  refreshToken(@Req() req) {
+  async refreshToken(@Req() req) {
     return this.authService.refreshToken(req.user.id);
   }
 
+  @Post('signout')
   @ApiOperation({})
   @ApiOkResponse({ description: 'User logged out successfully' })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @Post('signout')
-  signOut(@Req() req) {
+  async signOut(@Req() req) {
     this.authService.signOut(req.user.id);
   }
 }

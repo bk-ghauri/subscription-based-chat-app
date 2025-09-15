@@ -34,6 +34,7 @@ export class UsersController {
   //   return this.userService.create(createUserDto);
   // }
 
+  @Get('profile')
   @ApiOperation({ summary: `Used to view user's account details` })
   @ApiOkResponse({
     description: 'Profile returned',
@@ -41,7 +42,6 @@ export class UsersController {
   })
   @ApiForbiddenResponse({ description: 'Unauthorized' })
   @ApiBearerAuth()
-  @Get('profile')
   getProfile(@Req() req) {
     return this.userService.returnProfile(req.user.id);
   }
@@ -51,10 +51,10 @@ export class UsersController {
   //   return this.userService.update(id, updateUserDto);
   // }
 
+  @Delete()
   @ApiOperation({ summary: 'Used to delete a user form database' })
   @ApiOkResponse({ description: 'Account deleted successfully' })
   @ApiBearerAuth()
-  @Delete()
   async remove(@Request() req) {
     const userIdFromToken = req.user.id;
     return this.userService.remove(userIdFromToken);

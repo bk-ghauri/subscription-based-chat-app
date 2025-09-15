@@ -1,7 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ConversationMember } from './entities/conversation-member.entity';
 import { Repository } from 'typeorm';
+import { ConversationTypeEnum } from '@app/conversations/types/conversation.enum';
+import { ConversationRole } from './types/conversation-member.enum';
+import { ConversationsService } from '@app/conversations/conversations.service';
 
 @Injectable()
 export class ConversationMembersService {
@@ -40,19 +48,14 @@ export class ConversationMembersService {
     });
   }
 
-  // findAll() {
-  //   return `This action returns all conversationMembers`;
-  // }
-
-  // findOne(id: number) {
-  //   return `This action returns a #${id} conversationMember`;
-  // }
-
-  // update(id: number, updateConversationMemberDto: UpdateConversationMemberDto) {
-  //   return `This action updates a #${id} conversationMember`;
-  // }
-
-  // remove(id: number) {
-  //   return `This action removes a #${id} conversationMember`;
-  // }
+  async removeMember(conversationId: string, userId: string) {
+    const member = await this.conversationMemberRepository.findOneBy({
+      conversation_id: conversationId,
+      user_id: userId,
+    });
+    if (!member) {
+      throw new NotFoundException('Conversation member not found');
+    }
+    await this.conversationMemberRepository.remove(member);
+  }
 }

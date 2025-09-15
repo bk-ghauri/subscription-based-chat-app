@@ -6,6 +6,9 @@ import { Repository } from 'typeorm';
 import { UserService } from '@app/users/users.service';
 import { ConversationsService } from '@app/conversations/conversations.service';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ReturnMessageDto } from './dto/return-message.dto';
+import { MessageSenderDto } from './dto/message-sender.dto';
+import { MessageAttachmentDto } from '@app/attachments/dto/message-attachment.dto';
 
 @Injectable()
 export class MessagesService {
@@ -14,6 +17,7 @@ export class MessagesService {
     private readonly messageRepository: Repository<Message>,
 
     private readonly userService: UserService,
+
     private readonly conversationsService: ConversationsService,
   ) {}
 
@@ -52,34 +56,36 @@ export class MessagesService {
       where: { conversation: { conversation_id: conversationId } },
       relations: ['sender', 'attachments', 'conversation'],
       order: { created_at: 'ASC' },
-      skip: (page - 1) * limit,
+      skip: (page - 1) * limit, //offset
       take: limit,
-      withDeleted: false, // Exclude soft-deleted messages
+      withDeleted: false, // Exclude soft-deleted messages (optional param, false by default)
     });
 
     // Transform into safe DTOs to prevent leaking sensitive info to frontend
     return messages.map((msg) => this.toMessageResponse(msg));
   }
   // Helper to transform Message entity to safe DTO
-  private toMessageResponse(msg: Message) {
-    return {
+  private toMessageResponse(msg: Message): ReturnMessageDto {
+    const sender: MessageSenderDto = {
+      id: msg.sender.user_id,
+      displayName: msg.sender.display_name,
+      avatar: msg.sender.avatar_url,
+    };
+
+    const attachments: MessageAttachmentDto[] =
+      msg.attachments?.map((a) => ({
+        id: a.attachment_id,
+        url: a.file_url,
+      })) || [];
+
+    const response: ReturnMessageDto = {
       id: msg.message_id,
       body: msg.body,
       createdAt: msg.created_at,
-      sender: msg.sender
-        ? {
-            id: msg.sender.user_id,
-            displayName: msg.sender.display_name,
-            avatar: msg.sender.avatar_url,
-          }
-        : null,
-      conversationId: msg.conversation.conversation_id,
-      attachments:
-        msg.attachments?.map((a) => ({
-          id: a.attachment_id,
-          url: a.file_url,
-        })) || [],
+      sender,
+      attachments,
     };
+    return response;
   }
 
   async markReadByAll(messageId: string) {
@@ -98,18 +104,6 @@ export class MessagesService {
       relations: ['conversation'],
     });
   }
-
-  // findAll() {
-  //   return `This action returns all messages`;
-  // }
-
-  // findOne(id: number) {
-  //   return `This action returns a #${id} message`;
-  // }
-
-  // update(id: number, updateMessageDto: UpdateMessageDto) {
-  //   return `This action updates a #${id} message`;
-  // }
 
   async remove(id: string) {
     const result = await this.messageRepository.softDelete(id);

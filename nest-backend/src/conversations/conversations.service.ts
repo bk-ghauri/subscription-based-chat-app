@@ -6,7 +6,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CreateConversationDto } from './dto/create-conversation.dto';
-import { UpdateConversationDto } from './dto/update-conversation.dto';
 import { DataSource, In, Repository } from 'typeorm';
 import { ConversationMember } from '@app/conversation-members/entities/conversation-member.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -21,6 +20,7 @@ import { ReturnConversationDto } from './dto/return-conversation.dto';
 import { ConversationRole } from '@app/conversation-members/types/conversation-member.enum';
 import { AccountRole } from '@app/account-type/types/account-type.enum';
 import { CreatedByDto } from './dto/created-by.dto';
+import { AddMembersDto } from './dto/add-members.dto';
 
 @Injectable()
 export class ConversationsService {
@@ -323,18 +323,149 @@ export class ConversationsService {
     return response;
   }
 
+  async deleteGroupMember(
+    userId: string,
+    conversationId: string,
+    removedUserId: string,
+  ) {
+    // Load conversation
+    const conv = await this.findOne(conversationId);
+
+    if (!conv) {
+      throw new NotFoundException('Conversation not found.');
+    }
+
+    if (conv.type !== ConversationTypeEnum.GROUP) {
+      throw new BadRequestException('Only group conversations can be left.');
+    }
+
+    const membership =
+      await this.conversationMemberService.getConversationMembership(
+        conversationId,
+        removedUserId,
+      );
+
+    if (!membership) {
+      throw new ForbiddenException(
+        'User is not a member of this conversation.',
+      );
+    }
+
+    const isAdmin = membership.conversation_role === ConversationRole.ADMIN;
+
+    if (userId !== removedUserId && !isAdmin) {
+      throw new ForbiddenException('Only group admin can delete other users.');
+    }
+
+    if (userId === removedUserId && isAdmin) {
+      throw new BadRequestException('Admin cannot leave the conversation.');
+    }
+
+    await this.conversationMemberService.removeMember(
+      conversationId,
+      removedUserId,
+    );
+
+    return {
+      success: true,
+      message: 'You left the conversation successfully.',
+    };
+  }
+
+  async addGroupMembers(
+    userId: string,
+    conversationId: string,
+    dto: AddMembersDto,
+  ) {
+    // Load conversation
+    const conv = await this.findOne(conversationId);
+
+    if (!conv) {
+      throw new NotFoundException('Conversation not found.');
+    }
+
+    if (conv.type !== ConversationTypeEnum.GROUP) {
+      throw new BadRequestException(
+        'You can only add members to group conversations.',
+      );
+    }
+
+    // Verify actor is a member
+    const actorMembership =
+      await this.conversationMemberService.getConversationMembership(
+        conversationId,
+        userId,
+      );
+
+    if (!actorMembership) {
+      throw new ForbiddenException(
+        'You are not a member of this conversation.',
+      );
+    }
+
+    if (actorMembership.conversation_role !== ConversationRole.ADMIN) {
+      throw new ForbiddenException('Only group admins can add members.');
+    }
+    // Validate provided users exist
+    const users = await this.userService.findUsersByIds(dto.newMemberIds);
+    if (users.length !== dto.newMemberIds.length) {
+      throw new BadRequestException('One or more userIds are invalid.');
+    }
+
+    // Filter out users already in the group
+    const existingMemberships =
+      await this.conversationMemberService.getMembersByConversationId(
+        conversationId,
+      );
+    const existingUserIds = new Set(existingMemberships.map((m) => m.user_id));
+    const filteredUsers = users.filter((u) => !existingUserIds.has(u.user_id));
+
+    if (filteredUsers.length === 0) {
+      return {
+        success: true,
+        message: 'All provided users are already members.',
+      };
+    }
+
+    // Create new memberships
+    await this.dataSource.transaction(async (manager) => {
+      const rows = filteredUsers.map((u) =>
+        manager.create(ConversationMember, {
+          conversation_id: conversationId,
+          user_id: u.user_id,
+          conversation_role: ConversationRole.MEMBER,
+        }),
+      );
+
+      await manager.save(rows);
+    });
+
+    return {
+      success: true,
+      message: `${filteredUsers.length} member(s) added successfully.`,
+    };
+  }
+
+  async findOneWithMembers(id: string): Promise<ReturnConversationDto> {
+    const conv = await this.conversationRepository.findOne({
+      where: { conversation_id: id },
+      relations: ['created_by'],
+    });
+
+    if (!conv) {
+      throw new NotFoundException(`Conversation ${id} not found`);
+    }
+
+    const memberRows =
+      await this.conversationMemberService.getMembersByConversationId(id);
+
+    return this.toConversationResponseDto(conv, memberRows);
+  }
+
   findOne(id: string) {
     return this.conversationRepository.findOne({
       where: { conversation_id: id },
       relations: ['created_by'],
     });
   }
-
-  // update(id: number, updateConversationDto: UpdateConversationDto) {
-  //   return `This action updates a #${id} conversation`;
-  // }
-
-  // remove(id: number) {
-  //   return `This action removes a #${id} conversation`;
-  // }
 }
