@@ -1,12 +1,9 @@
 import {
   Controller,
-  Get,
   Post,
   Req,
   UseGuards,
   Request,
-  HttpCode,
-  HttpStatus,
   Body,
 } from '@nestjs/common';
 import { JwtAuthGuard, LocalAuthGuard, RefreshAuthGuard } from './utils/Guards';
@@ -18,7 +15,6 @@ import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
-  ApiConflictResponse,
   ApiOkResponse,
   ApiOperation,
   ApiUnauthorizedResponse,

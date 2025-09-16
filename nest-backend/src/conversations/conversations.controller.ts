@@ -117,12 +117,12 @@ export class ConversationsController {
   @ApiBearerAuth()
   async deleteGroupMember(
     @Req() req,
-    @Param('id') id: string,
+    @Param('id') conversationId: string,
     @Param('removedUserId') removedUserId: string,
   ) {
     const userId = req.user.id;
     return this.conversationsService.deleteGroupMember(
-      id,
+      conversationId,
       userId,
       removedUserId,
     );

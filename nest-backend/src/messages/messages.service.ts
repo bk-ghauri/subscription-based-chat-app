@@ -1,14 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateMessageDto } from './dto/create-message.dto';
-import { UpdateMessageDto } from './dto/update-message.dto';
 import { Message } from './entities/message.entity';
 import { Repository } from 'typeorm';
-import { UserService } from '@app/users/users.service';
+import { UsersService } from '@app/users/users.service';
 import { ConversationsService } from '@app/conversations/conversations.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ReturnMessageDto } from './dto/return-message.dto';
 import { MessageSenderDto } from './dto/message-sender.dto';
 import { MessageAttachmentDto } from '@app/attachments/dto/message-attachment.dto';
+import { MessageStatusDto } from '@app/message-status/dto/message-status.dto';
 
 @Injectable()
 export class MessagesService {
@@ -16,7 +16,7 @@ export class MessagesService {
     @InjectRepository(Message)
     private readonly messageRepository: Repository<Message>,
 
-    private readonly userService: UserService,
+    private readonly userService: UsersService,
 
     private readonly conversationsService: ConversationsService,
   ) {}
@@ -53,9 +53,9 @@ export class MessagesService {
     limit = 20,
   ) {
     const messages = await this.messageRepository.find({
-      where: { conversation: { conversation_id: conversationId } },
-      relations: ['sender', 'attachments', 'conversation'],
-      order: { created_at: 'ASC' },
+      where: { conversation: { id: conversationId } },
+      relations: ['sender', 'attachments', 'conversation', 'statuses'],
+      order: { createdAt: 'ASC' },
       skip: (page - 1) * limit, //offset
       take: limit,
       withDeleted: false, // Exclude soft-deleted messages (optional param, false by default)
@@ -67,30 +67,39 @@ export class MessagesService {
   // Helper to transform Message entity to safe DTO
   private toMessageResponse(msg: Message): ReturnMessageDto {
     const sender: MessageSenderDto = {
-      id: msg.sender.user_id,
-      displayName: msg.sender.display_name,
-      avatar: msg.sender.avatar_url,
+      id: msg.sender.id,
+      displayName: msg.sender.displayName,
+      avatar: msg.sender.avatarUrl,
     };
 
     const attachments: MessageAttachmentDto[] =
       msg.attachments?.map((a) => ({
-        id: a.attachment_id,
-        url: a.file_url,
+        id: a.id,
+        url: a.fileUrl,
+      })) || [];
+
+    const statuses: MessageStatusDto[] =
+      msg.statuses?.map((s) => ({
+        receiverId: s.receiverId,
+        status: s.status,
+        deliveredAt: s.deliveredAt,
+        readAt: s.readAt,
       })) || [];
 
     const response: ReturnMessageDto = {
-      id: msg.message_id,
+      id: msg.id,
       body: msg.body,
-      createdAt: msg.created_at,
+      createdAt: msg.createdAt,
       sender,
       attachments,
+      statuses,
     };
     return response;
   }
 
   async markReadByAll(messageId: string) {
     const result = await this.messageRepository.update(messageId, {
-      read_by_all: true,
+      readByAll: true,
     });
 
     if (result.affected === 0) {
@@ -100,7 +109,7 @@ export class MessagesService {
 
   async findByIdWithConversation(messageId: string) {
     return this.messageRepository.findOne({
-      where: { message_id: messageId },
+      where: { id: messageId },
       relations: ['conversation'],
     });
   }

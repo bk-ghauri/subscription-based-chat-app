@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Message } from '@app/messages/entities/message.entity';
 import {
@@ -11,20 +17,20 @@ import {
   IsDate,
 } from 'class-validator';
 
-@Entity()
+@Entity('attachments')
 export class Attachment {
   @PrimaryGeneratedColumn('uuid')
-  attachment_id: string;
+  id: string;
 
   @Column({ type: 'varchar', length: 500 })
   @IsUrl()
   @Length(5, 500)
-  file_url: string;
+  fileUrl: string;
 
   @Column({ type: 'varchar', length: 50 })
   @IsString()
   @Length(1, 50)
-  file_type: string;
+  fileType: string;
 
   @Column({ type: 'int' })
   @IsInt()
@@ -34,14 +40,15 @@ export class Attachment {
 
   @IsDate()
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  created_at: Date;
+  createdAt: Date;
 
   @ManyToOne(() => User, (user) => user.attachments, { onDelete: 'SET NULL' })
-  uploader_id: User;
+  uploaderId: User;
 
   @ManyToOne(() => Message, (msg) => msg.attachments, {
     onDelete: 'CASCADE',
     nullable: false,
   })
+  @JoinColumn({ name: 'message_id' })
   message: Message;
 }

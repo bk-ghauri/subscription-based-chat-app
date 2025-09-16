@@ -1,4 +1,4 @@
-import { AccountRole } from '@app/account-type/types/account-type.enum';
+import { AccountRole } from '@app/account-types/types/account-type.enum';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UserResponseDto {
@@ -6,13 +6,13 @@ export class UserResponseDto {
   email: string;
 
   @ApiProperty()
-  display_name: string;
+  displayName: string;
 
   @ApiProperty()
-  avatar_url: string | null;
+  avatarUrl: string | null;
 
   @ApiProperty()
-  created_at: Date;
+  createdAt: Date;
 
   @ApiProperty()
   accountType: AccountRole;

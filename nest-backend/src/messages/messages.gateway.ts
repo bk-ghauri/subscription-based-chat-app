@@ -11,7 +11,7 @@ import { MessagesService } from './messages.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { Server, Socket } from 'socket.io';
 //import { JwtService } from '@nestjs/jwt';
-import { UserService } from '@app/users/users.service';
+import { UsersService } from '@app/users/users.service';
 import { ConversationsService } from '@app/conversations/conversations.service';
 import { Inject, Logger } from '@nestjs/common';
 import jwtConfig from '@app/auth/config/jwt.config';
@@ -36,7 +36,7 @@ export class MessagesGateway
     private readonly jwtConfiguration: config.ConfigType<typeof jwtConfig>,
     private readonly messagesService: MessagesService,
     //private jwtService: JwtService,
-    private readonly userService: UserService,
+    private readonly userService: UsersService,
     private readonly conversationsService: ConversationsService,
     private readonly messageService: MessagesService,
     private readonly messageStatusService: MessageStatusService,
@@ -64,21 +64,21 @@ export class MessagesGateway
       }
 
       (client as any).user = {
-        id: user.user_id,
-        displayName: user.display_name,
+        id: user.id,
+        displayName: user.displayName,
       };
 
       //Presence tracking
       const socketId = client.id;
 
-      if (!this.onlineUsers.has(user.user_id)) {
-        this.onlineUsers.set(user.user_id, new Set());
-        this.server.emit('userOnline', { userId: user.user_id });
+      if (!this.onlineUsers.has(user.id)) {
+        this.onlineUsers.set(user.id, new Set());
+        this.server.emit('userOnline', { userId: user.id });
       }
 
-      this.onlineUsers.get(user.user_id)!.add(socketId);
+      this.onlineUsers.get(user.id)!.add(socketId);
 
-      this.logger.log(`${user.display_name} connected`);
+      this.logger.log(`${user.displayName} connected`);
 
       client.emit('authenticated', { success: true });
     } catch (err) {
@@ -226,7 +226,7 @@ export class MessagesGateway
     if (message) {
       if (
         message.conversation.type === ConversationTypeEnum.GROUP &&
-        message.read_by_all
+        message.readByAll
       ) {
         this.server.in(body.conversationId).emit('messageReadByAll', {
           messageId: body.messageId,

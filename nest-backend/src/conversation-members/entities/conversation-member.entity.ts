@@ -4,10 +4,10 @@ import { Conversation } from '@app/conversations/entities/conversation.entity';
 import { ConversationRole } from '../types/conversation-member.enum';
 import { IsEnum } from 'class-validator';
 
-@Entity()
+@Entity('conversation_members')
 export class ConversationMember {
-  @PrimaryColumn('uuid')
-  conversation_id: string;
+  @PrimaryColumn({ type: 'uuid', name: 'conversation_id' })
+  conversationId: string;
 
   @ManyToOne(() => Conversation, (conv) => conv.members, {
     onDelete: 'CASCADE',
@@ -16,8 +16,8 @@ export class ConversationMember {
   @JoinColumn({ name: 'conversation_id' })
   conversation: Conversation;
 
-  @PrimaryColumn('uuid')
-  user_id: string;
+  @PrimaryColumn({ type: 'uuid', name: 'user_id' })
+  userId: string;
 
   @ManyToOne(() => User, (user) => user.conversations, {
     onDelete: 'CASCADE',
@@ -32,5 +32,5 @@ export class ConversationMember {
     enum: ConversationRole,
     default: ConversationRole.MEMBER,
   })
-  conversation_role: string;
+  conversationRole: string;
 }

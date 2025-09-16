@@ -10,7 +10,7 @@ import {
 } from 'typeorm';
 import { Message } from '@app/messages/entities/message.entity';
 import { Subscription } from '../../subscriptions/entities/subscription.entity';
-import { AccountType } from '@app/account-type/entities/account-type.entity';
+import { AccountType } from '@app/account-types/entities/account-type.entity';
 import { Suspended } from '../../common/entities/suspended.entity';
 import { Attachment } from '../../attachments/entities/attachment.entity';
 import { ConversationMember } from '@app/conversation-members/entities/conversation-member.entity';
@@ -29,10 +29,10 @@ import {
   MinLength,
 } from 'class-validator';
 
-@Entity()
+@Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
-  user_id: string;
+  id: string;
 
   @IsEmail()
   @MaxLength(320)
@@ -48,23 +48,23 @@ export class User {
   @IsString()
   @MaxLength(1024)
   @Column({ type: 'text', nullable: true })
-  hashed_refresh_token: string | null;
+  hashedRefreshToken: string | null;
 
   @IsNotEmpty()
   @IsString()
   @Length(3, 50)
   @Column({ nullable: false, unique: true, length: 50 })
-  display_name: string;
+  displayName: string;
 
   @IsOptional()
   @IsUrl()
   @MaxLength(2048)
   @Column({ type: 'varchar', nullable: true, length: 2048 })
-  avatar_url: string | null;
+  avatarUrl: string | null;
 
   @IsDate()
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  created_at: Date;
+  createdAt: Date;
 
   @OneToMany(() => Subscription, (sub) => sub.user)
   subscriptions: Subscription[];
@@ -72,7 +72,7 @@ export class User {
   @OneToMany(() => Message, (msg) => msg.sender)
   messages: Message[];
 
-  @OneToMany(() => Attachment, (file) => file.uploader_id)
+  @OneToMany(() => Attachment, (file) => file.uploaderId)
   attachments: Attachment[];
 
   @OneToMany(() => ConversationMember, (cm) => cm.user)

@@ -1,4 +1,4 @@
-import { UserService } from '@app/users/users.service';
+import { UsersService } from '@app/users/users.service';
 import {
   BadRequestException,
   Inject,
@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { compare } from 'bcrypt';
-import { Repository } from 'typeorm';
 import refreshJwtConfig from './config/refresh-jwt.config';
 import * as config from '@nestjs/config';
 import { AuthJwtPayload } from '@app/auth/types/auth-jwtPayload';
@@ -18,7 +17,7 @@ import { LoginResponseDto } from '@app/auth/dto/login-response.dto';
 @Injectable()
 export class AuthService {
   constructor(
-    private userService: UserService,
+    private userService: UsersService,
     private jwtService: JwtService,
     @Inject(refreshJwtConfig.KEY)
     private refreshTokenConfig: config.ConfigType<typeof refreshJwtConfig>,
@@ -34,7 +33,7 @@ export class AuthService {
     }
 
     const existingDisplayName = await this.userService.findByDisplayName(
-      createUserDto.display_name,
+      createUserDto.displayName,
     );
     if (existingDisplayName) {
       throw new BadRequestException('Display name is already taken');
@@ -45,17 +44,15 @@ export class AuthService {
     });
 
     // Auto-login (return tokens)
-    const { accessToken, refreshToken } = await this.generateTokens(
-      newUser.user_id,
-    );
+    const { accessToken, refreshToken } = await this.generateTokens(newUser.id);
     const hashedRefreshToken = await argon2.hash(refreshToken);
     await this.userService.updateHashedRefreshToken(
-      newUser.user_id,
+      newUser.id,
       hashedRefreshToken,
     );
 
     return {
-      id: newUser.user_id,
+      id: newUser.id,
       accessToken,
       refreshToken,
     };
@@ -68,7 +65,7 @@ export class AuthService {
     if (!isPasswordMatch)
       throw new UnauthorizedException('Invalid credentials');
 
-    return { id: user.user_id };
+    return { id: user.id };
   }
 
   async login(userId: string) {
@@ -79,9 +76,9 @@ export class AuthService {
     const hashedRefreshToken = await argon2.hash(refreshToken);
     await this.userService.updateHashedRefreshToken(userId, hashedRefreshToken);
     const response: LoginResponseDto = {
-      user_id: userId,
-      access_token: accessToken,
-      refresh_token: refreshToken,
+      userId,
+      accessToken,
+      refreshToken,
     };
 
     return response;
@@ -104,20 +101,20 @@ export class AuthService {
     const hashedRefreshToken = await argon2.hash(refreshToken);
     await this.userService.updateHashedRefreshToken(userId, hashedRefreshToken);
     const response: LoginResponseDto = {
-      user_id: userId,
-      access_token: accessToken,
-      refresh_token: refreshToken,
+      userId,
+      accessToken,
+      refreshToken,
     };
     return response;
   }
 
   async validateRefreshToken(userId: string, refreshToken: string) {
     const user = await this.userService.findOne(userId);
-    if (!user || !user.hashed_refresh_token)
+    if (!user || !user.hashedRefreshToken)
       throw new UnauthorizedException('Invalid Refresh Token');
 
     const refreshTokenMatches = await argon2.verify(
-      user.hashed_refresh_token,
+      user.hashedRefreshToken,
       refreshToken,
     );
 
@@ -134,6 +131,6 @@ export class AuthService {
   async validateJwtUser(userId: string) {
     const user = await this.userService.findOne(userId);
     if (!user) throw new UnauthorizedException('User not found!');
-    return { id: user.user_id };
+    return { id: user.id };
   }
 }

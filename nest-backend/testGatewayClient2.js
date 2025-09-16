@@ -6,38 +6,69 @@ const SERVER_URL = 'http://localhost:3000';
 
 // Insert the JWT you got from your REST login
 const TOKEN =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0YmI1ZDlkNC0xNmE5LTRhZjMtYmZjZS0yZGVhNzk5NGE3YmYiLCJpYXQiOjE3NTc0OTQyMjYsImV4cCI6MTc1NzUwNTAyNn0.iWSygckTde9-yt5VWBBY1nu4dallny68FH4D5NT6syQ';
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2ZTExNjJmYy0wOTEwLTQzZWItYjA4MS1jYWZjM2VlYjYxNDkiLCJpYXQiOjE3NTgwMjAyODQsImV4cCI6MTc1ODAzMTA4NH0.SwNt-8WJBv2-yIF07n10RBasa9kyzTL22ljW1UUL2TA';
 // Conversation you already created via REST
-const CONVERSATION_ID = 'c883cb76-c634-48f4-9287-a098db33bad0';
+const CONVERSATION_ID = '7ff1d1f4-c3b3-4cf3-ab56-9f3d32fd3cf3';
 
 /**
  * 1. Initialize socket.io client
  * - Pass JWT in the `auth` field (your gateway checks `handshake.auth.token`)
  */
-const socket = io(SERVER_URL, {
-  auth: { token: TOKEN },
-  transports: ['websocket'], // force WebSocket (avoids long-polling fallback)
-});
 
 /**
  * 2. Connection lifecycle events
  */
+const socket = io(SERVER_URL, {
+  auth: { token: TOKEN },
+  transports: ['websocket'],
+});
+
+/**
+ * 2. Connection lifecycle
+ */
 socket.on('authenticated', () => {
-  console.log('✅ Connected:', socket.id);
+  console.log('✅ Authenticated, socket id:', socket.id);
+
+  // Join conversation room
   socket.emit('joinRoom', { conversationId: CONVERSATION_ID }, (response) => {
     console.log('➡️ joinRoom response:', response);
 
     if (response.success) {
-      // After joining, send a test message
+      // Send test message
       socket.emit(
-        'createMessage',
-        { conversationId: CONVERSATION_ID, body: 'Hello from test client!' },
-        (msg) => {
-          console.log('➡️ createMessage ack:', msg);
+        'sendMessage',
+        { conversationId: CONVERSATION_ID, body: 'Hello back!' },
+        (ack) => {
+          console.log('➡️ sendMessage ack:', ack);
+
+          const msgId = ack?.message?.id;
+          if (msgId) {
+            // Simulate delivered event
+            socket.emit('messageDelivered', {
+              messageId: msgId,
+              conversationId: CONVERSATION_ID,
+            });
+
+            // Simulate read event
+            setTimeout(() => {
+              socket.emit('messageRead', {
+                messageId: msgId,
+                conversationId: CONVERSATION_ID,
+              });
+            }, 1500);
+
+            // Simulate remove message
+            setTimeout(() => {
+              socket.emit('removeMessage', {
+                messageId: msgId,
+                conversationId: CONVERSATION_ID,
+              });
+            }, 3000);
+          }
         },
       );
 
-      // Simulate typing event
+      // Typing events
       socket.emit('typing', {
         conversationId: CONVERSATION_ID,
         isTyping: true,
@@ -57,14 +88,34 @@ socket.on('disconnect', (reason) => {
 });
 
 /**
- * 3. Listen for server events
+ * 3. Listen for all server events
  */
-socket.on('message', (msg) => {
-  console.log('📩 New message event:', msg);
+socket.on('userOnline', (data) => {
+  console.log('🟢 User online:', data);
+});
+
+socket.on('userOffline', (data) => {
+  console.log('🔴 User offline:', data);
+});
+
+socket.on('receiveMessage', (msg) => {
+  console.log('📩 receiveMessage:', msg);
 });
 
 socket.on('typing', (data) => {
-  console.log('⌨️ Typing event:', data);
+  console.log('⌨️ Typing:', data);
+});
+
+socket.on('messageStatusUpdate', (data) => {
+  console.log('📬 Message status update:', data);
+});
+
+socket.on('messageReadByAll', (data) => {
+  console.log('👀 Message read by all:', data);
+});
+
+socket.on('messageDeleted', (data) => {
+  console.log('🗑️ Message deleted:', data);
 });
 
 socket.on('connect_error', (err) => {

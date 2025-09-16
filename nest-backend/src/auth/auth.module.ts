@@ -10,24 +10,18 @@ import { ConfigModule } from '@nestjs/config';
 import { JwtStrategy } from './utils/JwtStrategy';
 import refreshJwtConfig from './config/refresh-jwt.config';
 import { RefreshJwtStrategy } from './utils/RefreshStrategy';
-import { UserService } from '@app/users/users.service';
-import { AccountType } from '@app/account-type/entities/account-type.entity';
+import { UsersService } from '@app/users/users.service';
+import { UsersModule } from '@app/users/users.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, AccountType]),
     JwtModule.registerAsync(jwtConfig.asProvider()),
     ConfigModule.forFeature(refreshJwtConfig),
     ConfigModule.forFeature(jwtConfig),
+    UsersModule,
   ],
   controllers: [AuthController],
-  providers: [
-    LocalStrategy,
-    RefreshJwtStrategy,
-    JwtStrategy,
-    AuthService,
-    UserService,
-  ],
+  providers: [LocalStrategy, RefreshJwtStrategy, JwtStrategy, AuthService],
   exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

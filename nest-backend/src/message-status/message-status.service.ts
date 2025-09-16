@@ -23,15 +23,15 @@ export class MessageStatusService {
     const update: Partial<MessageStatus> = { status };
 
     if (status === MessageStatusEnum.DELIVERED) {
-      update.delivered_at = new Date();
+      update.deliveredAt = new Date();
     }
 
     if (status === MessageStatusEnum.READ) {
-      update.read_at = new Date();
+      update.readAt = new Date();
     }
 
     await this.messageStatusRepository.update(
-      { message_id: messageId, receiver_id: receiverId },
+      { messageId, receiverId },
       update,
     );
 
@@ -39,7 +39,7 @@ export class MessageStatusService {
     if (status === MessageStatusEnum.READ) {
       const unreadCount = await this.messageStatusRepository.count({
         where: {
-          message_id: messageId,
+          messageId,
           status: Not(MessageStatusEnum.READ),
         },
       });

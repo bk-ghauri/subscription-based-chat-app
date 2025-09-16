@@ -12,7 +12,7 @@ import {
   Delete,
   ForbiddenException,
 } from '@nestjs/common';
-import { UserService } from './users.service';
+import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import {
@@ -27,7 +27,7 @@ import { UserResponseDto } from './dto/user-response.dto';
 @UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UsersController {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UsersService) {}
 
   // @Post()
   // create(@Body() createUserDto: CreateUserDto) {

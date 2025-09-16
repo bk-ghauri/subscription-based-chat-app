@@ -6,7 +6,7 @@ import { UsersModule } from '@app/users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { AttachmentsModule } from './attachments/attachments.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
-import { AccountType } from '@app/account-type/entities/account-type.entity';
+import { AccountType } from '@app/account-types/entities/account-type.entity';
 import { Suspended } from './common/entities/suspended.entity';
 import { Conversation } from '@app/conversations/entities/conversation.entity';
 import { ConversationMember } from '@app/conversation-members/entities/conversation-member.entity';
@@ -20,8 +20,9 @@ import { ConversationMembersModule } from './conversation-members/conversation-m
 import jwtConfig from './auth/config/jwt.config';
 import { Message } from './messages/entities/message.entity';
 import { MessageStatusModule } from './message-status/message-status.module';
-import { AccountTypeModule } from './account-type/account-type.module';
+import { AccountTypesModule } from './account-types/account-types.module';
 import { MessageStatus } from './message-status/entities/message-status.entity';
+import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { MessageStatus } from './message-status/entities/message-status.entity';
         Message,
         MessageStatus,
       ],
+      namingStrategy: new SnakeNamingStrategy(),
       synchronize: false,
       dropSchema: false,
     }),
@@ -59,7 +61,7 @@ import { MessageStatus } from './message-status/entities/message-status.entity';
     ConversationsModule,
     ConversationMembersModule,
     MessageStatusModule,
-    AccountTypeModule,
+    AccountTypesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

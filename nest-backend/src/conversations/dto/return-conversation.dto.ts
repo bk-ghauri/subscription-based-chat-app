@@ -16,7 +16,7 @@ export class ReturnConversationDto {
   createdAt: Date;
 
   @ApiProperty({ type: CreatedByDto })
-  createdBy?: CreatedByDto;
+  createdBy: CreatedByDto | null;
 
   @ApiProperty({ type: [ConvMemberDto] })
   members: ConvMemberDto[];

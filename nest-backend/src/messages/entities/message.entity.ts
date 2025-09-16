@@ -5,6 +5,7 @@ import {
   ManyToOne,
   OneToMany,
   DeleteDateColumn,
+  JoinColumn,
 } from 'typeorm';
 import { User } from '@app/users/entities/user.entity';
 import { Conversation } from '@app/conversations/entities/conversation.entity';
@@ -18,17 +19,19 @@ import {
   MaxLength,
 } from 'class-validator';
 
-@Entity()
+@Entity('messages')
 export class Message {
   @PrimaryGeneratedColumn('uuid')
-  message_id: string;
+  id: string;
 
   @ManyToOne(() => Conversation, (conv) => conv.messages, {
     onDelete: 'CASCADE',
     nullable: false,
   })
+  @JoinColumn({ name: 'conversation_id' })
   conversation: Conversation;
 
+  @JoinColumn({ name: 'sender_id' })
   @ManyToOne(() => User, (user) => user.messages, { onDelete: 'SET NULL' })
   sender: User;
 
@@ -40,18 +43,18 @@ export class Message {
 
   @IsDate()
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  created_at: Date;
+  createdAt: Date;
 
   @DeleteDateColumn()
-  deleted_at: Date;
+  deletedAt: Date;
 
   @IsBoolean()
   @Column({ default: false })
-  is_removed: boolean;
+  isRemoved: boolean;
 
   @IsBoolean()
   @Column({ default: false })
-  read_by_all: boolean;
+  readByAll: boolean;
 
   @OneToMany(() => Attachment, (file) => file.message)
   attachments: Attachment[];

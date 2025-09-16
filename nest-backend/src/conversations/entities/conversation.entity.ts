@@ -4,6 +4,7 @@ import {
   Column,
   OneToMany,
   ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { User } from '@app/users/entities/user.entity';
 import { Message } from '@app/messages/entities/message.entity';
@@ -11,10 +12,10 @@ import { ConversationMember } from '@app/conversation-members/entities/conversat
 import { ConversationTypeEnum } from '../types/conversation.enum';
 import { IsDate, IsEnum, IsOptional, IsString, Length } from 'class-validator';
 
-@Entity()
+@Entity('conversations')
 export class Conversation {
   @PrimaryGeneratedColumn('uuid')
-  conversation_id: string;
+  id: string;
 
   @Column({ type: 'enum', enum: ConversationTypeEnum })
   @IsEnum(ConversationTypeEnum)
@@ -29,10 +30,11 @@ export class Conversation {
 
   @IsDate()
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  created_at: Date;
+  createdAt: Date;
 
-  @ManyToOne(() => User, { nullable: false })
-  created_by: User;
+  @ManyToOne(() => User, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'created_by' })
+  createdBy: User | null;
 
   @OneToMany(() => Message, (msg) => msg.conversation)
   messages: Message[];

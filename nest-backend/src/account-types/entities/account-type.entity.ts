@@ -6,7 +6,7 @@ import { IsEnum } from 'class-validator';
 @Entity('account_types')
 export class AccountType {
   @PrimaryColumn('uuid')
-  user_id: string; // FK to User
+  userId: string; // FK to User
 
   @OneToOne(() => User, { onDelete: 'CASCADE', nullable: false })
   @JoinColumn({ name: 'user_id' })
