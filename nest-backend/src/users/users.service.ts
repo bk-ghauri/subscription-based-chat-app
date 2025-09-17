@@ -1,40 +1,46 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from '@app/typeorm/entities/User';
+import { In, Repository } from 'typeorm';
+import { User } from '@app/users/entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { AccountType } from '@app/account-types/entities/account-type.entity';
+import { UserResponseDto } from './dto/user-response.dto';
+import { AccountRole } from '@app/account-types/types/account-type.enum';
+import { AccountTypesService } from '@app/account-types/account-types.service';
 
 @Injectable()
-export class UserService {
-  constructor(@InjectRepository(User) private UserRepo: Repository<User>) {}
+export class UsersService {
+  constructor(
+    @InjectRepository(User) private UserRepo: Repository<User>,
+
+    private readonly accountTypeService: AccountTypesService,
+  ) {}
 
   async updateHashedRefreshToken(
     userId: string,
     hashedRefreshToken: string | null,
   ) {
-    return await this.UserRepo.update(
-      { user_id: userId },
-      { hashed_refresh_token: hashedRefreshToken },
-    );
+    return await this.UserRepo.update({ id: userId }, { hashedRefreshToken });
   }
 
   async create(createUserDto: CreateUserDto) {
-    const user = await this.UserRepo.create(createUserDto);
-    return await this.UserRepo.save(user);
+    const user = await this.UserRepo.save(this.UserRepo.create(createUserDto));
+    await this.accountTypeService.saveOne(user.id, AccountRole.FREE);
+    return user;
   }
 
-  async update(user_id: string, updateUserDto: UpdateUserDto) {
-    await this.UserRepo.update({ user_id }, updateUserDto);
-    return this.UserRepo.findOneBy({ user_id });
-  }
+  // async update(user_id: string, updateUserDto: UpdateUserDto) {
+  //   await this.UserRepo.update({ user_id }, updateUserDto);
+  //   return this.UserRepo.findOneBy({ user_id });
+  // }
 
-  async remove(user_id: string) {
-    const result = await this.UserRepo.delete({ user_id });
+  async remove(userId: string) {
+    const result = await this.UserRepo.delete({ id: userId });
     if (result.affected === 0) {
-      throw new NotFoundException(`User with ID ${user_id} not found`);
+      throw new NotFoundException(`User with ID ${userId} not found`);
     }
-    return { message: `User ${user_id} deleted successfully` };
+    return { message: `User ${userId} deleted successfully` };
   }
 
   async findAll() {
@@ -49,18 +55,49 @@ export class UserService {
     });
   }
 
-  async findOne(user_id: string) {
+  async findByDisplayName(displayName: string) {
+    return await this.UserRepo.findOne({
+      where: { displayName },
+    });
+  }
+
+  async findUsersByIds(userIds: string[]) {
+    return this.UserRepo.findBy({ id: In(userIds) });
+  }
+
+  async findOne(userId: string) {
     return this.UserRepo.findOne({
-      where: { user_id },
+      where: { id: userId },
       select: [
-        'user_id',
+        'id',
         'email',
-        'google_id',
-        'display_name',
-        'avatar_url',
-        'created_at',
+        'displayName',
+        'avatarUrl',
+        'createdAt',
         'accountType',
       ],
     });
+  }
+
+  async returnProfile(userId: string): Promise<UserResponseDto> {
+    const user = await this.UserRepo.findOne({
+      where: { id: userId },
+      relations: ['accountType'],
+      select: ['id', 'email', 'displayName', 'avatarUrl', 'createdAt'],
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    const response: UserResponseDto = {
+      email: user.email,
+      displayName: user.displayName,
+      avatarUrl: user.avatarUrl,
+      createdAt: user.createdAt,
+      accountType: user.accountType?.role as AccountRole,
+    };
+
+    return response;
   }
 }

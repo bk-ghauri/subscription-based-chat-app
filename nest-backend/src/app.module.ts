@@ -6,16 +6,23 @@ import { UsersModule } from '@app/users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { AttachmentsModule } from './attachments/attachments.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
-import { AccountType } from './typeorm/entities/AccountType';
-import { Suspended } from './typeorm/entities/Suspended';
-import { Conversation } from './typeorm/entities/Conversation';
-import { ConversationMember } from './typeorm/entities/ConversationMember';
-import { Attachment } from './typeorm/entities/Attachment';
-import { Subscription } from './typeorm/entities/Subscription';
-import { User } from './typeorm/entities/User';
+import { AccountType } from '@app/account-types/entities/account-type.entity';
+import { Suspended } from './common/entities/suspended.entity';
+import { Conversation } from '@app/conversations/entities/conversation.entity';
+import { ConversationMember } from '@app/conversation-members/entities/conversation-member.entity';
+import { Attachment } from './attachments/entities/attachment.entity';
+import { Subscription } from './subscriptions/entities/subscription.entity';
+import { User } from './users/entities/user.entity';
 import { ConfigModule } from '@nestjs/config';
 import { MessagesModule } from './messages/messages.module';
+import { ConversationsModule } from './conversations/conversations.module';
+import { ConversationMembersModule } from './conversation-members/conversation-members.module';
 import jwtConfig from './auth/config/jwt.config';
+import { Message } from './messages/entities/message.entity';
+import { MessageStatusModule } from './message-status/message-status.module';
+import { AccountTypesModule } from './account-types/account-types.module';
+import { MessageStatus } from './message-status/entities/message-status.entity';
+import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
 @Module({
   imports: [
@@ -34,8 +41,12 @@ import jwtConfig from './auth/config/jwt.config';
         ConversationMember,
         Attachment,
         Subscription,
+        Message,
+        MessageStatus,
       ],
+      namingStrategy: new SnakeNamingStrategy(),
       synchronize: false,
+      dropSchema: false,
     }),
     ConfigModule.forRoot({
       isGlobal: true, // Makes ConfigModule available in every module
@@ -47,6 +58,10 @@ import jwtConfig from './auth/config/jwt.config';
     AttachmentsModule,
     SubscriptionsModule,
     MessagesModule,
+    ConversationsModule,
+    ConversationMembersModule,
+    MessageStatusModule,
+    AccountTypesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
