@@ -11,10 +11,6 @@ export class AccountTypesService {
     private readonly accountTypeRepository: Repository<AccountType>,
   ) {}
 
-  async findByUserId(userId: string) {
-    return this.accountTypeRepository.findOne({ where: { userId } });
-  }
-
   async findOne(userId: string) {
     return await this.accountTypeRepository.findOne({
       where: { userId },

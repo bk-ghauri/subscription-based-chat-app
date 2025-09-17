@@ -6,6 +6,7 @@ import {
   OneToMany,
   DeleteDateColumn,
   JoinColumn,
+  OneToOne,
 } from 'typeorm';
 import { User } from '@app/users/entities/user.entity';
 import { Conversation } from '@app/conversations/entities/conversation.entity';
@@ -56,8 +57,8 @@ export class Message {
   @Column({ default: false })
   readByAll: boolean;
 
-  @OneToMany(() => Attachment, (file) => file.message)
-  attachments: Attachment[];
+  @OneToOne(() => Attachment, (file) => file.message)
+  attachment: Attachment;
 
   @OneToMany(() => MessageStatus, (status) => status.message)
   statuses: MessageStatus[];

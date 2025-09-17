@@ -16,8 +16,8 @@ export class ReturnMessageDto {
   @ApiProperty({ type: MessageSenderDto })
   sender: MessageSenderDto;
 
-  @ApiProperty({ type: [MessageAttachmentDto] })
-  attachments?: MessageAttachmentDto[];
+  @ApiProperty({ type: MessageAttachmentDto })
+  attachment?: MessageAttachmentDto | null;
 
   @ApiProperty({ type: [MessageStatusDto] })
   statuses: MessageStatusDto[];

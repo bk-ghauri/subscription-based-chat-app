@@ -23,6 +23,8 @@ import { MessageStatusModule } from './message-status/message-status.module';
 import { AccountTypesModule } from './account-types/account-types.module';
 import { MessageStatus } from './message-status/entities/message-status.entity';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
+import { MulterModule } from '@nestjs/platform-express';
+import { MEDIA_ATTACHMENTS_DIR } from './common/constants';
 
 @Module({
   imports: [
@@ -45,8 +47,26 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
         MessageStatus,
       ],
       namingStrategy: new SnakeNamingStrategy(),
-      synchronize: false,
+      synchronize: true,
       dropSchema: false,
+    }),
+    MulterModule.register({
+      dest: MEDIA_ATTACHMENTS_DIR,
+      limits: {
+        fileSize: 50 * 1024 * 1024, // 50MB max
+      },
+      fileFilter: (req, file, cb) => {
+        const allowedTypes = [
+          'image/jpeg',
+          'image/png',
+          'application/pdf',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ];
+        if (!allowedTypes.includes(file.mimetype)) {
+          return cb(new Error('Unsupported file type'), false);
+        }
+        cb(null, true);
+      },
     }),
     ConfigModule.forRoot({
       isGlobal: true, // Makes ConfigModule available in every module

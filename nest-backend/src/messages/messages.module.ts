@@ -16,6 +16,7 @@ import { ConversationsModule } from '@app/conversations/conversations.module';
 import { AuthModule } from '@app/auth/auth.module';
 import { MessageStatusModule } from '@app/message-status/message-status.module';
 import { ConversationMembersModule } from '@app/conversation-members/conversation-members.module';
+import { AttachmentsModule } from '@app/attachments/attachments.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { ConversationMembersModule } from '@app/conversation-members/conversatio
     AuthModule,
     forwardRef(() => MessageStatusModule),
     ConversationMembersModule,
+    AttachmentsModule,
   ],
   providers: [MessagesGateway, MessagesService],
   controllers: [MessagesController],

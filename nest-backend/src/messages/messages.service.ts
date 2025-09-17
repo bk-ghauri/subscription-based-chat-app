@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { Message } from './entities/message.entity';
 import { Repository } from 'typeorm';
@@ -9,6 +13,7 @@ import { ReturnMessageDto } from './dto/return-message.dto';
 import { MessageSenderDto } from './dto/message-sender.dto';
 import { MessageAttachmentDto } from '@app/attachments/dto/message-attachment.dto';
 import { MessageStatusDto } from '@app/message-status/dto/message-status.dto';
+import { AttachmentsService } from '@app/attachments/attachments.service';
 
 @Injectable()
 export class MessagesService {
@@ -17,8 +22,8 @@ export class MessagesService {
     private readonly messageRepository: Repository<Message>,
 
     private readonly userService: UsersService,
-
     private readonly conversationsService: ConversationsService,
+    private readonly attachmentService: AttachmentsService,
   ) {}
 
   async create(dto: CreateMessageDto) {
@@ -40,11 +45,28 @@ export class MessagesService {
 
     const saved = await this.messageRepository.save(message);
 
+    // Link attachment if provided
+
+    if (dto.attachmentId) {
+      const attachment = await this.attachmentService.findOneWithoutMessage(
+        dto.attachmentId,
+      );
+
+      if (!attachment) {
+        throw new BadRequestException('Attachment not found or already linked');
+      }
+
+      attachment.message = saved;
+      await this.attachmentService.saveWithMessage(attachment);
+
+      saved.attachment = attachment;
+    }
+
     return this.toMessageResponse({
       ...saved,
       sender,
       conversation,
-    } as Message);
+    });
   }
 
   async findMessagesByConversation(
@@ -54,7 +76,7 @@ export class MessagesService {
   ) {
     const messages = await this.messageRepository.find({
       where: { conversation: { id: conversationId } },
-      relations: ['sender', 'attachments', 'conversation', 'statuses'],
+      relations: ['sender', 'attachment', 'conversation', 'statuses'],
       order: { createdAt: 'ASC' },
       skip: (page - 1) * limit, //offset
       take: limit,
@@ -64,6 +86,7 @@ export class MessagesService {
     // Transform into safe DTOs to prevent leaking sensitive info to frontend
     return messages.map((msg) => this.toMessageResponse(msg));
   }
+
   // Helper to transform Message entity to safe DTO
   private toMessageResponse(msg: Message): ReturnMessageDto {
     const sender: MessageSenderDto = {
@@ -72,11 +95,9 @@ export class MessagesService {
       avatar: msg.sender.avatarUrl,
     };
 
-    const attachments: MessageAttachmentDto[] =
-      msg.attachments?.map((a) => ({
-        id: a.id,
-        url: a.fileUrl,
-      })) || [];
+    const attachment: MessageAttachmentDto | null = msg.attachment
+      ? { id: msg.attachment.id, url: msg.attachment.fileUrl }
+      : null;
 
     const statuses: MessageStatusDto[] =
       msg.statuses?.map((s) => ({
@@ -91,7 +112,7 @@ export class MessagesService {
       body: msg.body,
       createdAt: msg.createdAt,
       sender,
-      attachments,
+      attachment,
       statuses,
     };
     return response;

@@ -4,6 +4,8 @@ import {
   Column,
   ManyToOne,
   JoinColumn,
+  OneToOne,
+  Unique,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Message } from '@app/messages/entities/message.entity';
@@ -18,6 +20,7 @@ import {
 } from 'class-validator';
 
 @Entity('attachments')
+@Unique(['message'])
 export class Attachment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -42,13 +45,20 @@ export class Attachment {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
-  @ManyToOne(() => User, (user) => user.attachments, { onDelete: 'SET NULL' })
-  uploaderId: User;
+  @Column({ name: 'uploader_id', nullable: true })
+  uploaderId: string;
 
-  @ManyToOne(() => Message, (msg) => msg.attachments, {
+  @ManyToOne(() => User, (user) => user.attachments, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'uploader_id' })
+  uploader: User;
+
+  @Column({ name: 'message_id', nullable: true })
+  messageId: string | null;
+
+  @OneToOne(() => Message, (msg) => msg.attachment, {
     onDelete: 'CASCADE',
-    nullable: false,
+    nullable: true,
   })
   @JoinColumn({ name: 'message_id' })
-  message: Message;
+  message: Message | null;
 }

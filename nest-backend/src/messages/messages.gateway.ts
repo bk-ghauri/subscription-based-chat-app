@@ -147,10 +147,7 @@ export class MessagesGateway
       return { success: false, message: 'Unauthorized' };
     }
 
-    const message = await this.messagesService.create({
-      ...dto,
-      senderId: user.id,
-    });
+    const message = await this.messagesService.create(dto);
 
     // Emit to recipients via receiveMessage
     this.server.in(dto.conversationId).emit('receiveMessage', message);
