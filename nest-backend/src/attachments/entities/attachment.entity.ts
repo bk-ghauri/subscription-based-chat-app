@@ -16,6 +16,7 @@ import {
   Max,
   IsDate,
 } from 'class-validator';
+import { ValidationMessages } from '@app/common/constants/validation-messages';
 
 @Entity('attachments')
 export class Attachment {
@@ -35,7 +36,7 @@ export class Attachment {
   @Column({ type: 'int' })
   @IsInt()
   @IsPositive()
-  @Max(50 * 1024 * 1024, { message: 'File cannot exceed 50 MB' })
+  @Max(50 * 1024 * 1024, { message: ValidationMessages.fileTooLarge })
   size: number;
 
   @IsDate()

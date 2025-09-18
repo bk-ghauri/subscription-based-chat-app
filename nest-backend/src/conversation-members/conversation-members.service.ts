@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ConversationMember } from './entities/conversation-member.entity';
 import { Repository } from 'typeorm';
+import { ErrorMessages } from '@app/common/constants/error-messages';
 
 @Injectable()
 export class ConversationMembersService {
@@ -13,7 +14,7 @@ export class ConversationMembersService {
   async getMembersByConversationId(conversationId: string) {
     return await this.conversationMemberRepository.find({
       where: { conversationId },
-      relations: ['user'], // eager-load user details
+      relations: { user: true },
     });
   }
 
@@ -27,12 +28,13 @@ export class ConversationMembersService {
   async getUserMemberships(userId: string) {
     return await this.conversationMemberRepository.find({
       where: { userId },
-      relations: [
-        'user',
-        'conversation',
-        'conversation.members',
-        'conversation.createdBy',
-      ],
+      relations: {
+        user: true,
+        conversation: {
+          members: true,
+          createdBy: true,
+        },
+      },
       order: {
         conversation: {
           createdAt: 'DESC',
@@ -47,7 +49,7 @@ export class ConversationMembersService {
       userId,
     });
     if (!member) {
-      throw new NotFoundException('Conversation member not found');
+      throw new NotFoundException(ErrorMessages.conversationMemberNotFound);
     }
     await this.conversationMemberRepository.remove(member);
   }

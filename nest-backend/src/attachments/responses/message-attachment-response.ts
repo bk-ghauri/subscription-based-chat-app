@@ -1,9 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class MessageAttachmentDto {
-  @ApiProperty()
+export class MessageAttachmentResponse {
   id: string;
-
-  @ApiProperty()
   url: string;
 }

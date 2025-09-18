@@ -1,13 +1,5 @@
-import {
-  Controller,
-  Post,
-  Req,
-  UseGuards,
-  Request,
-  Body,
-} from '@nestjs/common';
+import { Controller, Post, UseGuards, Body, HttpCode } from '@nestjs/common';
 import { JwtAuthGuard, LocalAuthGuard, RefreshAuthGuard } from './utils/Guards';
-//import type { Request } from 'express';
 import { Public } from './decorators/public.decorator';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '@app/users/dto/create-user.dto';
@@ -15,12 +7,14 @@ import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
+  ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { LoginResponseDto } from './dto/login-response.dto';
+import { LoginResponseObject } from './dto/login-response';
 import { LoginDto } from './dto/login.dto';
+import { UserId } from '@app/common/decorators/user-id.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -28,7 +22,7 @@ export class AuthController {
 
   @Post('signup')
   @ApiOperation({ summary: 'Create user account and store it in database' })
-  @ApiOkResponse({ description: 'Acount created', type: CreateUserDto })
+  @ApiOkResponse({ description: 'Account created', type: CreateUserDto })
   @ApiBadRequestResponse({
     description: 'An account already exists with this email or display name',
   })
@@ -41,15 +35,15 @@ export class AuthController {
   @ApiOperation({ summary: 'Login with username and password' })
   @ApiBody({ type: LoginDto })
   @ApiOkResponse({
-    type: LoginResponseDto,
+    type: LoginResponseObject,
     description: 'User logged in successfully',
   })
   @ApiUnauthorizedResponse({
     description: 'Invalid credentials',
   })
   @UseGuards(LocalAuthGuard)
-  async login(@Request() req) {
-    return this.authService.login(req.user.id);
+  async login(@UserId() userId: string) {
+    return this.authService.login(userId);
   }
 
   @Post('refresh')
@@ -58,21 +52,22 @@ export class AuthController {
   })
   @ApiOkResponse({
     description: 'New refresh token generated',
-    type: LoginResponseDto,
+    type: LoginResponseObject,
   })
   @ApiBearerAuth()
   @ApiUnauthorizedResponse({ description: 'Invalid refresh token' })
   @UseGuards(RefreshAuthGuard)
-  async refreshToken(@Req() req) {
-    return this.authService.refreshToken(req.user.id);
+  async refreshToken(@UserId() userId: string) {
+    return this.authService.refreshToken(userId);
   }
 
   @Post('signout')
+  @HttpCode(204)
   @ApiOperation({})
-  @ApiOkResponse({ description: 'User logged out successfully' })
+  @ApiNoContentResponse({ description: 'User logged out successfully' })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  async signOut(@Req() req) {
-    this.authService.signOut(req.user.id);
+  async signOut(@UserId() userId: string) {
+    this.authService.signOut(userId);
   }
 }

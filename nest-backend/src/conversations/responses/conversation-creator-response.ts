@@ -1,12 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsUrl, IsUUID } from 'class-validator';
 
-export class MessageSenderDto {
-  @ApiProperty()
+export class ConversationCreatorResponse {
   id: string;
-
-  @ApiProperty()
   displayName: string;
-
-  @ApiProperty()
   avatar?: string | null;
 }

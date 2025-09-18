@@ -29,6 +29,7 @@ import {
   MinLength,
 } from 'class-validator';
 
+@Unique(['email'])
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -41,13 +42,13 @@ export class User {
 
   @IsString()
   @MinLength(60) // bcrypt hashed length baseline (guard)
-  @Column()
+  @Column({ select: false })
   password: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(1024)
-  @Column({ type: 'text', nullable: true })
+  @MinLength(44)
+  @Column({ type: 'text', nullable: true, select: false })
   hashedRefreshToken: string | null;
 
   @IsNotEmpty()

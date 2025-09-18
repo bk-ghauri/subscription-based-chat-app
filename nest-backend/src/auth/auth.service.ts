@@ -12,7 +12,8 @@ import * as config from '@nestjs/config';
 import { AuthJwtPayload } from '@app/auth/types/auth-jwtPayload';
 import * as argon2 from 'argon2';
 import { CreateUserDto } from '@app/users/dto/create-user.dto';
-import { LoginResponseDto } from '@app/auth/dto/login-response.dto';
+import { LoginResponseObject } from '@app/auth/dto/login-response';
+import { ErrorMessages } from '@app/common/constants/error-messages';
 
 @Injectable()
 export class AuthService {
@@ -29,14 +30,14 @@ export class AuthService {
       createUserDto.email,
     );
     if (existingUser) {
-      throw new BadRequestException('User with this email already exists');
+      throw new BadRequestException(ErrorMessages.emailExists);
     }
 
     const existingDisplayName = await this.userService.findByDisplayName(
       createUserDto.displayName,
     );
     if (existingDisplayName) {
-      throw new BadRequestException('Display name is already taken');
+      throw new BadRequestException(ErrorMessages.displayNameTaken);
     }
 
     const newUser = await this.userService.create({
@@ -45,11 +46,11 @@ export class AuthService {
 
     // Auto-login (return tokens)
     const { accessToken, refreshToken } = await this.generateTokens(newUser.id);
-    const hashedRefreshToken = await argon2.hash(refreshToken);
-    await this.userService.updateHashedRefreshToken(
-      newUser.id,
+    const hashedRefreshToken = await this.hashString(refreshToken);
+    await this.userService.updateHashedRefreshToken({
+      userId: newUser.id,
       hashedRefreshToken,
-    );
+    });
 
     return {
       id: newUser.id,
@@ -60,22 +61,22 @@ export class AuthService {
 
   async validateUser(email: string, password: string) {
     const user = await this.userService.findByEmail(email);
-    if (!user) throw new UnauthorizedException('User not found!');
+    if (!user) throw new UnauthorizedException(ErrorMessages.userNotFound);
     const isPasswordMatch = await compare(password, user.password);
     if (!isPasswordMatch)
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException(ErrorMessages.invalidCredentials);
 
     return { id: user.id };
   }
 
   async login(userId: string) {
-    // const payload: AuthJwtPayload = { sub: userId };
-    // const token = this.jwtService.sign(payload);
-    // const refreshToken = this.jwtService.sign(payload, this.refreshTokenConfig);
     const { accessToken, refreshToken } = await this.generateTokens(userId);
-    const hashedRefreshToken = await argon2.hash(refreshToken);
-    await this.userService.updateHashedRefreshToken(userId, hashedRefreshToken);
-    const response: LoginResponseDto = {
+    const hashedRefreshToken = await this.hashString(refreshToken);
+    await this.userService.updateHashedRefreshToken({
+      userId,
+      hashedRefreshToken,
+    });
+    const response: LoginResponseObject = {
       userId,
       accessToken,
       refreshToken,
@@ -85,7 +86,7 @@ export class AuthService {
   }
 
   async generateTokens(userId: string) {
-    const payload: AuthJwtPayload = { sub: userId };
+    const payload: AuthJwtPayload = { userId };
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload),
       this.jwtService.signAsync(payload, this.refreshTokenConfig),
@@ -98,9 +99,12 @@ export class AuthService {
 
   async refreshToken(userId: string) {
     const { accessToken, refreshToken } = await this.generateTokens(userId);
-    const hashedRefreshToken = await argon2.hash(refreshToken);
-    await this.userService.updateHashedRefreshToken(userId, hashedRefreshToken);
-    const response: LoginResponseDto = {
+    const hashedRefreshToken = await this.hashString(refreshToken);
+    await this.userService.updateHashedRefreshToken({
+      userId,
+      hashedRefreshToken,
+    });
+    const response: LoginResponseObject = {
       userId,
       accessToken,
       refreshToken,
@@ -111,26 +115,37 @@ export class AuthService {
   async validateRefreshToken(userId: string, refreshToken: string) {
     const user = await this.userService.findOne(userId);
     if (!user || !user.hashedRefreshToken)
-      throw new UnauthorizedException('Invalid Refresh Token');
+      throw new UnauthorizedException(ErrorMessages.invalidRequest);
 
-    const refreshTokenMatches = await argon2.verify(
+    const refreshTokenMatches = await this.verifyHashMatch(
       user.hashedRefreshToken,
       refreshToken,
     );
 
     if (!refreshTokenMatches)
-      throw new UnauthorizedException('Invalid Refresh Token');
+      throw new UnauthorizedException(ErrorMessages.invalidToken);
 
     return { id: userId };
   }
 
   async signOut(userId: string) {
-    await this.userService.updateHashedRefreshToken(userId, null);
+    await this.userService.updateHashedRefreshToken({
+      userId,
+      hashedRefreshToken: null,
+    });
   }
 
   async validateJwtUser(userId: string) {
     const user = await this.userService.findOne(userId);
-    if (!user) throw new UnauthorizedException('User not found!');
+    if (!user) throw new UnauthorizedException(ErrorMessages.userNotFound);
     return { id: user.id };
+  }
+
+  async hashString(plainString: string) {
+    return await argon2.hash(plainString);
+  }
+
+  async verifyHashMatch(hashedString: string, plainString: string) {
+    return await argon2.verify(hashedString, plainString);
   }
 }

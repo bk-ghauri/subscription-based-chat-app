@@ -11,13 +11,8 @@ import { User } from '@app/users/entities/user.entity';
 import { Conversation } from '@app/conversations/entities/conversation.entity';
 import { Attachment } from '@app/attachments/entities/attachment.entity';
 import { MessageStatus } from '@app/message-status/entities/message-status.entity';
-import {
-  IsBoolean,
-  IsDate,
-  IsOptional,
-  IsString,
-  MaxLength,
-} from 'class-validator';
+import { IsBoolean, IsDate, IsOptional, IsString } from 'class-validator';
+import { MaxTextLength } from '@app/common/validators/max-text-length';
 
 @Entity('messages')
 export class Message {
@@ -37,7 +32,7 @@ export class Message {
 
   @IsString()
   @IsOptional()
-  @MaxLength(5000)
+  @MaxTextLength(5000)
   @Column({ type: 'text', nullable: true })
   body: string | null;
 

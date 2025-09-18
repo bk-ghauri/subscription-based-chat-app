@@ -20,6 +20,7 @@ import * as jwt from 'jsonwebtoken';
 import { MessageStatusService } from '@app/message-status/message-status.service';
 import { MessageStatusEnum } from '@app/message-status/types/message-status.enum';
 import { ConversationTypeEnum } from '@app/conversations/types/conversation.enum';
+import { ErrorMessages } from '@app/common/constants/error-messages';
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class MessagesGateway
@@ -60,7 +61,7 @@ export class MessagesGateway
 
       if (!user) {
         client.disconnect();
-        return { success: false, message: 'Unauthorized' };
+        return { success: false, message: ErrorMessages.unauthorized };
       }
 
       (client as any).user = {
@@ -82,7 +83,7 @@ export class MessagesGateway
 
       client.emit('authenticated', { success: true });
     } catch (err) {
-      this.logger.error('Invalid client connection:', err.message);
+      this.logger.error(ErrorMessages.invalidConnectionError, err.message);
       client.disconnect();
     }
   }
@@ -116,7 +117,7 @@ export class MessagesGateway
     const user = (client as any).user;
 
     if (!user) {
-      return { success: false, message: 'Unauthorized' };
+      return { success: false, message: ErrorMessages.unauthorized };
     }
 
     //verify if user is part of the conversation
@@ -144,7 +145,7 @@ export class MessagesGateway
   ) {
     const user = (client as any).user;
     if (!user) {
-      return { success: false, message: 'Unauthorized' };
+      return { success: false, message: ErrorMessages.unauthorized };
     }
 
     const message = await this.messagesService.create({
