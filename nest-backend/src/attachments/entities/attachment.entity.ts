@@ -17,12 +17,10 @@ import {
 } from 'class-validator';
 import { ValidationMessages } from '@app/common/constants/validation-messages';
 import { MessageAttachment } from '@app/message-attachments/entities/message-attachment.entity';
+import { BaseEntity } from '@app/common/entities/base.entity';
 
 @Entity('attachments')
-export class Attachment {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
+export class Attachment extends BaseEntity {
   @Column({ type: 'varchar', length: 500 })
   @IsUrl()
   @Length(5, 500)
@@ -38,10 +36,6 @@ export class Attachment {
   @IsPositive()
   @Max(50 * 1024 * 1024, { message: ValidationMessages.fileTooLarge })
   size: number;
-
-  @IsDate()
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  createdAt: Date;
 
   @ManyToOne(() => User, (user) => user.attachments, { onDelete: 'SET NULL' })
   uploaderId: User;

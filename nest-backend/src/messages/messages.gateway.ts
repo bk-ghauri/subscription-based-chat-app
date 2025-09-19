@@ -32,6 +32,8 @@ export class MessagesGateway
 
   private readonly logger = new Logger(MessagesGateway.name);
   private onlineUsers = new Map<string, Set<string>>(); // userId -> socketIds
+  private offlineTimers = new Map<string, NodeJS.Timeout>();
+  private readonly OFFLINE_GRACE_MS = 15_000; // 15s grace period
 
   constructor(
     private readonly messagesService: MessagesService,
@@ -62,7 +64,14 @@ export class MessagesGateway
       };
 
       //Presence tracking
+
       const socketId = client.id;
+
+      const existingTimer = this.offlineTimers.get(user.id);
+      if (existingTimer) {
+        clearTimeout(existingTimer);
+        this.offlineTimers.delete(user.id);
+      }
 
       if (!this.onlineUsers.has(user.id)) {
         this.onlineUsers.set(user.id, new Set());
@@ -89,10 +98,24 @@ export class MessagesGateway
 
     if (userSockets) {
       userSockets.delete(socketId);
+
       if (userSockets.size === 0) {
-        this.onlineUsers.delete(user.id);
-        this.server.emit('userOffline', { userId: user.id });
-        this.logger.log(`${user.displayName} disconnected (offline)`);
+        // Start grace timeout before marking offline
+        const timer = setTimeout(() => {
+          // Double-check they didn’t reconnect during timeout
+          const socketsAfterTimeout = this.onlineUsers.get(user.id);
+          if (!socketsAfterTimeout || socketsAfterTimeout.size === 0) {
+            this.onlineUsers.delete(user.id);
+            this.server.emit('userOffline', { userId: user.id });
+            this.logger.log(`${user.displayName} went offline`);
+          }
+          this.offlineTimers.delete(user.id);
+        }, this.OFFLINE_GRACE_MS); // 15s grace period
+
+        this.offlineTimers.set(user.id, timer);
+        this.logger.log(
+          `${user.displayName} disconnect detected, waiting before offline...`,
+        );
       } else {
         this.logger.log(
           `${user.displayName} disconnected (still online in other tabs)`,

@@ -28,13 +28,11 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { BaseEntity } from '@app/common/entities/base.entity';
 
 @Unique(['email'])
 @Entity('users')
-export class User {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
+export class User extends BaseEntity {
   @IsEmail()
   @MaxLength(320)
   @Column({ nullable: false, unique: true, length: 320 })
@@ -62,10 +60,6 @@ export class User {
   @MaxLength(2048)
   @Column({ type: 'varchar', nullable: true, length: 2048 })
   avatarUrl: string | null;
-
-  @IsDate()
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  createdAt: Date;
 
   @OneToMany(() => Subscription, (sub) => sub.user)
   subscriptions: Subscription[];
