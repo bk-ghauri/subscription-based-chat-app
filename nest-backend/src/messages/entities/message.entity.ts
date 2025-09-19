@@ -13,6 +13,7 @@ import { Attachment } from '@app/attachments/entities/attachment.entity';
 import { MessageStatus } from '@app/message-status/entities/message-status.entity';
 import { IsBoolean, IsDate, IsOptional, IsString } from 'class-validator';
 import { MaxTextLength } from '@app/common/validators/max-text-length';
+import { MessageAttachment } from '@app/message-attachments/entities/message-attachment.entity';
 
 @Entity('messages')
 export class Message {
@@ -51,8 +52,8 @@ export class Message {
   @Column({ default: false })
   readByAll: boolean;
 
-  @OneToMany(() => Attachment, (file) => file.message)
-  attachments: Attachment[];
+  @OneToMany(() => MessageAttachment, (ma) => ma.message, { eager: true })
+  attachmentLinks: MessageAttachment[];
 
   @OneToMany(() => MessageStatus, (status) => status.message)
   statuses: MessageStatus[];

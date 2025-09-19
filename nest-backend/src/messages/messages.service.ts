@@ -59,7 +59,7 @@ export class MessagesService {
       where: { conversation: { id: conversationId } },
       relations: {
         sender: true,
-        attachments: true,
+        attachmentLinks: { attachment: true },
         conversation: true,
         statuses: true,
       },
@@ -80,9 +80,9 @@ export class MessagesService {
     };
 
     const attachments: MessageAttachmentResponse[] =
-      msg.attachments?.map((a) => ({
-        id: a.id,
-        url: a.fileUrl,
+      msg.attachmentLinks?.map((link) => ({
+        id: link.attachment.id,
+        url: link.attachment.fileUrl,
       })) || [];
 
     const statuses: MessageStatusResponse[] =

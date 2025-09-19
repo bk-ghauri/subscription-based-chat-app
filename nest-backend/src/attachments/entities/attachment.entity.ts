@@ -3,10 +3,9 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
-  JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
-import { Message } from '@app/messages/entities/message.entity';
 import {
   IsUrl,
   Length,
@@ -17,6 +16,7 @@ import {
   IsDate,
 } from 'class-validator';
 import { ValidationMessages } from '@app/common/constants/validation-messages';
+import { MessageAttachment } from '@app/message-attachments/entities/message-attachment.entity';
 
 @Entity('attachments')
 export class Attachment {
@@ -46,10 +46,6 @@ export class Attachment {
   @ManyToOne(() => User, (user) => user.attachments, { onDelete: 'SET NULL' })
   uploaderId: User;
 
-  @ManyToOne(() => Message, (msg) => msg.attachments, {
-    onDelete: 'CASCADE',
-    nullable: false,
-  })
-  @JoinColumn({ name: 'message_id' })
-  message: Message;
+  @OneToMany(() => MessageAttachment, (ma) => ma.attachment)
+  messageLinks: MessageAttachment[];
 }
