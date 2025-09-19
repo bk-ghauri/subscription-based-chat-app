@@ -1,4 +1,3 @@
-import { ApiProperty } from '@nestjs/swagger';
 import { MessageStatusEnum } from '../types/message-status.enum';
 
 export class MessageStatusResponse {

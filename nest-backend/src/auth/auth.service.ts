@@ -14,14 +14,17 @@ import * as argon2 from 'argon2';
 import { CreateUserDto } from '@app/users/dto/create-user.dto';
 import { LoginResponseObject } from '@app/auth/dto/login-response';
 import { ErrorMessages } from '@app/common/constants/error-messages';
+import { TokenService } from './token.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private userService: UsersService,
-    private jwtService: JwtService,
-    @Inject(refreshJwtConfig.KEY)
-    private refreshTokenConfig: config.ConfigType<typeof refreshJwtConfig>,
+    // private jwtService: JwtService,
+    // @Inject(refreshJwtConfig.KEY)
+    // private refreshTokenConfig: config.ConfigType<typeof refreshJwtConfig>,
+
+    private readonly tokenService: TokenService,
   ) {}
 
   async signup(createUserDto: CreateUserDto) {
@@ -45,7 +48,8 @@ export class AuthService {
     });
 
     // Auto-login (return tokens)
-    const { accessToken, refreshToken } = await this.generateTokens(newUser.id);
+    const { accessToken, refreshToken } =
+      await this.tokenService.generateTokens(newUser.id);
     const hashedRefreshToken = await this.hashString(refreshToken);
     await this.userService.updateHashedRefreshToken({
       userId: newUser.id,
@@ -60,9 +64,9 @@ export class AuthService {
   }
 
   async validateUser(email: string, password: string) {
-    const user = await this.userService.findByEmail(email);
+    const user = await this.userService.findByEmailWithPassword(email);
     if (!user) throw new UnauthorizedException(ErrorMessages.userNotFound);
-    const isPasswordMatch = await compare(password, user.password);
+    const isPasswordMatch = await this.comparePassword(password, user.password);
     if (!isPasswordMatch)
       throw new UnauthorizedException(ErrorMessages.invalidCredentials);
 
@@ -70,7 +74,8 @@ export class AuthService {
   }
 
   async login(userId: string) {
-    const { accessToken, refreshToken } = await this.generateTokens(userId);
+    const { accessToken, refreshToken } =
+      await this.tokenService.generateTokens(userId);
     const hashedRefreshToken = await this.hashString(refreshToken);
     await this.userService.updateHashedRefreshToken({
       userId,
@@ -85,20 +90,21 @@ export class AuthService {
     return response;
   }
 
-  async generateTokens(userId: string) {
-    const payload: AuthJwtPayload = { userId };
-    const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(payload),
-      this.jwtService.signAsync(payload, this.refreshTokenConfig),
-    ]);
-    return {
-      accessToken,
-      refreshToken,
-    };
-  }
+  // async generateTokens(userId: string) {
+  //   const payload: AuthJwtPayload = { userId };
+  //   const [accessToken, refreshToken] = await Promise.all([
+  //     this.jwtService.signAsync(payload),
+  //     this.jwtService.signAsync(payload, this.refreshTokenConfig),
+  //   ]);
+  //   return {
+  //     accessToken,
+  //     refreshToken,
+  //   };
+  // }
 
   async refreshToken(userId: string) {
-    const { accessToken, refreshToken } = await this.generateTokens(userId);
+    const { accessToken, refreshToken } =
+      await this.tokenService.generateTokens(userId);
     const hashedRefreshToken = await this.hashString(refreshToken);
     await this.userService.updateHashedRefreshToken({
       userId,
@@ -147,5 +153,12 @@ export class AuthService {
 
   async verifyHashMatch(hashedString: string, plainString: string) {
     return await argon2.verify(hashedString, plainString);
+  }
+
+  async comparePassword(
+    providedPassword: string,
+    actualPassword: string,
+  ): Promise<boolean> {
+    return await compare(providedPassword, actualPassword);
   }
 }

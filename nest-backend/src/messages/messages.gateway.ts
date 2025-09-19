@@ -21,6 +21,7 @@ import { MessageStatusService } from '@app/message-status/message-status.service
 import { MessageStatusEnum } from '@app/message-status/types/message-status.enum';
 import { ConversationTypeEnum } from '@app/conversations/types/conversation.enum';
 import { ErrorMessages } from '@app/common/constants/error-messages';
+import { TokenService } from '@app/auth/token.service';
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class MessagesGateway
@@ -33,14 +34,12 @@ export class MessagesGateway
   private onlineUsers = new Map<string, Set<string>>(); // userId -> socketIds
 
   constructor(
-    @Inject(jwtConfig.KEY)
-    private readonly jwtConfiguration: config.ConfigType<typeof jwtConfig>,
     private readonly messagesService: MessagesService,
-    //private jwtService: JwtService,
     private readonly userService: UsersService,
     private readonly conversationsService: ConversationsService,
     private readonly messageService: MessagesService,
     private readonly messageStatusService: MessageStatusService,
+    private readonly tokenService: TokenService,
   ) {}
 
   async handleConnection(client: Socket) {
@@ -48,16 +47,9 @@ export class MessagesGateway
       client.handshake.auth?.token ||
       client.handshake.headers?.authorization?.split(' ')[1];
 
-    if (!this.jwtConfiguration.secret) {
-      throw new Error('JWT secret is not configured');
-    }
-
-    // Fetch user from DB using user_id
     try {
-      //const payload = this.jwtService.verify(token);
-
-      const payload: any = jwt.verify(token, this.jwtConfiguration.secret); // <-- use secret directly since injecting JwtService was causing issues
-      const user = await this.userService.findOne(payload.sub);
+      const userId = await this.tokenService.verifyAccessToken(token);
+      const user = await this.userService.findOne(userId);
 
       if (!user) {
         client.disconnect();

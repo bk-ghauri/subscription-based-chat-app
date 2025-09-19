@@ -55,6 +55,15 @@ export class UsersService {
     });
   }
 
+  async findByEmailWithPassword(email: string) {
+    return await this.UserRepository.findOne({
+      where: {
+        email,
+      },
+      select: { id: true, email: true, password: true },
+    });
+  }
+
   async findByDisplayName(displayName: string) {
     return await this.UserRepository.findOne({
       where: { displayName },

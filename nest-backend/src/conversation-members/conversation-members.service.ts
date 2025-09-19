@@ -19,9 +19,11 @@ export class ConversationMembersService {
   }
 
   async getConversationMembership(conversationId: string, userId: string) {
-    return await this.conversationMemberRepository.findOneBy({
-      conversationId,
-      userId,
+    return await this.conversationMemberRepository.findOne({
+      where: {
+        conversationId,
+        userId,
+      },
     });
   }
 

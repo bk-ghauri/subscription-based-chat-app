@@ -40,7 +40,7 @@ export class ConversationsService {
 
   // Helper: format response
 
-  private toConversationResponseDto(
+  private toConversationResponse(
     conversation: Conversation,
     memberRows: ConversationMember[],
   ): ConversationResponse {
@@ -101,7 +101,7 @@ export class ConversationsService {
         conversation.id,
       );
 
-    return this.toConversationResponseDto(conversation, memberRows);
+    return this.toConversationResponse(conversation, memberRows);
   }
 
   // DM creation (1:1)
@@ -177,10 +177,7 @@ export class ConversationsService {
         relations: { createdBy: true },
       });
 
-      return this.toConversationResponseDto(
-        conversationWithCreator!,
-        memberRows,
-      );
+      return this.toConversationResponse(conversationWithCreator!, memberRows);
     });
   }
 
@@ -253,10 +250,7 @@ export class ConversationsService {
         relations: { createdBy: true },
       });
 
-      return this.toConversationResponseDto(
-        conversationWithCreator!,
-        memberRows,
-      );
+      return this.toConversationResponse(conversationWithCreator!, memberRows);
     });
   }
 
@@ -306,7 +300,7 @@ export class ConversationsService {
       conversationMap.entries(),
     ).map(([_, memberRows]) => {
       const conversation = memberRows[0].conversation;
-      return this.toConversationResponseDto(conversation, memberRows);
+      return this.toConversationResponse(conversation, memberRows);
     });
 
     return response;
@@ -454,7 +448,7 @@ export class ConversationsService {
     const memberRows =
       await this.conversationMemberService.getMembersByConversationId(id);
 
-    return this.toConversationResponseDto(conversation, memberRows);
+    return this.toConversationResponse(conversation, memberRows);
   }
 
   async findOneWithCreator(id: string) {
