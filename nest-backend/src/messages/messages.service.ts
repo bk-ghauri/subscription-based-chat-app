@@ -9,12 +9,15 @@ import { Repository } from 'typeorm';
 import { UsersService } from '@app/users/users.service';
 import { ConversationsService } from '@app/conversations/conversations.service';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MessageResponseObject } from './responses/message-response';
+import { MessageResponse } from './responses/message-response';
 import { MessageSenderResponse } from './responses/message-sender-response';
 import { MessageAttachmentResponse } from '@app/attachments/responses/message-attachment-response';
 import { MessageStatusResponse } from '@app/message-status/responses/message-status-response';
-import { ErrorMessages } from '@app/common/constants/error-messages';
-import { SuccessMessages } from '@app/common/constants/success-messages';
+import { ErrorMessages } from '@app/common/strings/error-messages';
+import { SuccessMessages } from '@app/common/strings/success-messages';
+import { AttachmentsService } from '@app/attachments/attachments.service';
+import { MessageAttachmentsService } from '@app/message-attachments/message-attachments.service';
+import { MessageAttachment } from '@app/message-attachments/entities/message-attachment.entity';
 
 @Injectable()
 export class MessagesService {
@@ -23,12 +26,13 @@ export class MessagesService {
     private readonly messageRepository: Repository<Message>,
 
     private readonly userService: UsersService,
-    private readonly conversationsService: ConversationsService,
+    private readonly conversationService: ConversationsService,
     private readonly attachmentService: AttachmentsService,
+    private readonly messageAttachmentService: MessageAttachmentsService,
   ) {}
 
   async create(dto: CreateMessageDto) {
-    const conversation = await this.conversationsService.findOne(
+    const conversation = await this.conversationService.findOne(
       dto.conversationId,
     );
 
@@ -47,21 +51,23 @@ export class MessagesService {
 
     const saved = await this.messageRepository.save(message);
 
-    // Link attachment if provided
+    // Link attachments (if any) through bridge table
+    if (dto.attachmentIds?.length) {
+      const messageAttachments = await Promise.all(
+        dto.attachmentIds.map(async (attachmentId) => {
+          const attachment = await this.attachmentService.findOne(attachmentId);
+          if (!attachment) {
+            throw new BadRequestException(ErrorMessages.attachmentNotFound);
+          }
 
-    if (dto.attachmentId) {
-      const attachment = await this.attachmentService.findOneWithoutMessage(
-        dto.attachmentId,
+          return this.messageAttachmentService.create({
+            messageId: saved.id,
+            attachmentId: attachment.id,
+          });
+        }),
       );
 
-      if (!attachment) {
-        throw new BadRequestException('Attachment not found or already linked');
-      }
-
-      attachment.message = saved;
-      await this.attachmentService.saveWithMessage(attachment);
-
-      saved.attachment = attachment;
+      saved.attachmentLinks = messageAttachments;
     }
 
     return this.toMessageResponse({
@@ -94,7 +100,7 @@ export class MessagesService {
   }
 
   // Helper to transform Message entity to safe DTO
-  private toMessageResponse(msg: Message): MessageResponseObject {
+  private toMessageResponse(msg: Message): MessageResponse {
     const sender: MessageSenderResponse = {
       id: msg.sender.id,
       displayName: msg.sender.displayName,
@@ -115,12 +121,12 @@ export class MessagesService {
         readAt: s.readAt,
       })) || [];
 
-    const response: MessageResponseObject = {
+    const response: MessageResponse = {
       id: msg.id,
       body: msg.body,
       createdAt: msg.createdAt,
       sender,
-      attachment,
+      attachments,
       statuses,
     };
     return response;

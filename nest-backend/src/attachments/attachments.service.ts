@@ -8,28 +8,33 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Attachment } from './entities/attachment.entity';
-import { User } from '@app/users/entities/user.entity';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { AccountTypesService } from '@app/account-types/account-types.service';
 import { AccountRole } from '@app/account-types/types/account-type.enum';
 import { CreateAttachmentDto } from './dto/create-attachment.dto';
-import { ReturnAttachmentDto } from './dto/return-attachment.dto';
+import { AttachmentResponse } from './responses/attachment-response';
 import { SignedUrlService } from './signed-url.service';
+import { MessageAttachmentsService } from '@app/message-attachments/message-attachments.service';
+import { ErrorMessages } from '@app/common/strings/error-messages';
+import { UsersService } from '@app/users/users.service';
+import { MEDIA_ATTACHMENTS_DIR } from '@app/common/constants';
 
 @Injectable()
 export class AttachmentsService {
   private readonly logger = new Logger(AttachmentsService.name);
   constructor(
     @InjectRepository(Attachment)
-    private readonly attachmentRepo: Repository<Attachment>,
+    private readonly attachmentRepository: Repository<Attachment>,
     private readonly accountTypeService: AccountTypesService,
     private readonly signedUrlService: SignedUrlService,
+    private readonly messageAttachmentService: MessageAttachmentsService,
+    private readonly userService: UsersService,
   ) {}
 
-  async saveUnlinkedAttachment(file: Express.Multer.File, userId: string) {
+  async create(file: Express.Multer.File, userId: string) {
     const accountType = await this.accountTypeService.findOne(userId);
 
     const planLimit =
@@ -47,13 +52,10 @@ export class AttachmentsService {
         this.logger.error('Failed to cleanup oversized file', err);
       }
 
-      throw new BadRequestException(
-        `File exceeds your plan limit of ${planLimit / (1024 * 1024)} MB`,
-      );
+      throw new BadRequestException(ErrorMessages.fileTooLarge(planLimit));
     }
 
-    const relativePath = path.relative(process.cwd(), file.path);
-    const fileUrl = `/${relativePath.replace(/\\/g, '/')}`;
+    const fileUrl = path.join(MEDIA_ATTACHMENTS_DIR, file.filename);
 
     // Save metadata to DB
 
@@ -62,22 +64,27 @@ export class AttachmentsService {
       fileType: file.mimetype,
       size: file.size,
       uploaderId: userId,
-      messageId: null, // link later when message is created
     };
 
-    const attachment = this.attachmentRepo.create(dto);
+    const user = await this.userService.findOne(userId);
+
+    const attachment = this.attachmentRepository.create({
+      ...dto,
+      uploader: { id: dto.uploaderId },
+    });
 
     try {
-      const saved = await this.attachmentRepo.save(attachment);
+      const saved = await this.attachmentRepository.save(attachment);
 
-      const returnDto: ReturnAttachmentDto = {
+      const response: AttachmentResponse = {
         id: saved.id,
         fileUrl: saved.fileUrl,
         fileType: saved.fileType,
         size: saved.size,
         createdAt: saved.createdAt,
       };
-      return returnDto;
+
+      return response;
     } catch (err) {
       // Cleanup file if DB save fails
       await fs.unlink(file.path).catch(() => {});
@@ -85,30 +92,15 @@ export class AttachmentsService {
     }
   }
 
-  async findOneWithMessage(id: string) {
-    return await this.attachmentRepo.findOne({
-      where: { id },
-      select: ['id', 'fileUrl'],
-      relations: ['message'],
-    });
-  }
-
   async getSignedUrl(attachmentId: string, userId: string) {
-    const attachment = await this.findOneWithMessage(attachmentId);
-
+    const attachment = await this.findOne(attachmentId);
     if (!attachment) throw new NotFoundException('Attachment not found');
 
-    const isMember = await this.attachmentRepo
-      .createQueryBuilder('attachment')
-      .innerJoin('attachment.message', 'message')
-      .innerJoin('message.conversation', 'conversation')
-      .innerJoin('conversation.members', 'member')
-      .innerJoin('member.user', 'user')
-      .where('attachment.id = :attachmentId', { attachmentId })
-      .andWhere('user.id = :userId', { userId })
-      .getExists(); // efficient EXISTS check
-
-    if (!isMember) throw new ForbiddenException('You do not have access');
+    const hasAccess = await this.messageAttachmentService.checkUserAccess(
+      attachmentId,
+      userId,
+    );
+    if (!hasAccess) throw new ForbiddenException('You do not have access');
 
     const token = this.signedUrlService.generateAttachmentToken(attachmentId);
     return { url: `/attachments/download/${attachmentId}?token=${token}` };
@@ -122,64 +114,11 @@ export class AttachmentsService {
     const attachment = await this.findOne(id);
     if (!attachment) throw new NotFoundException('Attachment not found');
 
-    const absPath = path.resolve(attachment.fileUrl);
+    const absPath = attachment.fileUrl;
     return absPath;
   }
 
-  // async getSecureFilePath(attachmentId: string, userId: string) {
-  //   // Load attachment + file path
-  //   const attachment = await this.attachmentRepo.findOne({
-  //     where: { id: attachmentId },
-  //     select: ['id', 'fileUrl'],
-  //     relations: ['message'],
-  //   });
-
-  //   if (!attachment) {
-  //     throw new NotFoundException('Attachment not found');
-  //   }
-
-  //   // Check membership directly in DB
-  //   const isMember = await this.attachmentRepo
-  //     .createQueryBuilder('attachment')
-  //     .innerJoin('attachment.message', 'message')
-  //     .innerJoin('message.conversation', 'conversation')
-  //     .innerJoin('conversation.members', 'member')
-  //     .innerJoin('member.user', 'user')
-  //     .where('attachment.id = :attachmentId', { attachmentId })
-  //     .andWhere('user.id = :userId', { userId })
-  //     .getExists(); // efficient EXISTS check
-
-  //   if (!isMember) {
-  //     throw new ForbiddenException('You do not have access to this file');
-  //   }
-
-  //   const absPath = path.resolve(attachment.fileUrl); // assuming fileUrl stores relative path
-  //   return absPath;
-  // }
-
-  // async findWithMessageAndConversation(id: string) {
-  //   return this.attachmentRepo.findOne({
-  //     where: { id },
-  //     relations: [
-  //       'message',
-  //       'message.conversation',
-  //       'message.conversation.members',
-  //       'message.conversation.members.user',
-  //     ],
-  //   });
-  // }
-
   async findOne(id: string) {
-    return await this.attachmentRepo.findOne({ where: { id } });
-  }
-
-  async findOneWithoutMessage(id: string) {
-    return await this.attachmentRepo.findOne({
-      where: { id, messageId: IsNull() }, // ensure not already linked
-    });
-  }
-
-  async saveWithMessage(attachment: Attachment) {
-    await this.attachmentRepo.save(attachment);
+    return await this.attachmentRepository.findOne({ where: { id } });
   }
 }

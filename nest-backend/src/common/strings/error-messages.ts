@@ -3,6 +3,7 @@ export const ErrorMessages = {
   displayNameTaken: 'This name is already taken',
   userNotFound: 'User not found!',
   messageNotFound: 'Message not found',
+  attachmentNotFound: 'Attachment not found',
   senderNotFound: 'Sender not found',
   conversationNotFound: 'Conversation not found',
   invalidCredentials: 'Invalid credentials!',
@@ -19,4 +20,6 @@ export const ErrorMessages = {
   adminCannotLeave: 'Group admin cannot leave the group',
   unauthorized: 'Unauthorized',
   invalidConnectionError: 'Invalid client connection:',
+  fileTooLarge: (limit: number) =>
+    `File exceeds your plan limit of ${limit} MB`,
 };

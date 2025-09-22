@@ -13,14 +13,11 @@ import { Server, Socket } from 'socket.io';
 //import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '@app/users/users.service';
 import { ConversationsService } from '@app/conversations/conversations.service';
-import { Inject, Logger } from '@nestjs/common';
-import jwtConfig from '@app/auth/config/jwt.config';
-import * as config from '@nestjs/config';
-import * as jwt from 'jsonwebtoken';
+import { Logger } from '@nestjs/common';
 import { MessageStatusService } from '@app/message-status/message-status.service';
 import { MessageStatusEnum } from '@app/message-status/types/message-status.enum';
 import { ConversationTypeEnum } from '@app/conversations/types/conversation.enum';
-import { ErrorMessages } from '@app/common/constants/error-messages';
+import { ErrorMessages } from '@app/common/strings/error-messages';
 import { TokenService } from '@app/auth/token.service';
 
 @WebSocketGateway({ cors: { origin: '*' } })

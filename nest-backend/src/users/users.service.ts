@@ -4,39 +4,38 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { User } from '@app/users/entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { AccountType } from '@app/account-types/entities/account-type.entity';
 import { UserResponseObject } from './responses/user-response';
 import { AccountRole } from '@app/account-types/types/account-type.enum';
 import { AccountTypesService } from '@app/account-types/account-types.service';
 import { UpdateRefreshTokenDto } from './dto/update-refresh-token.dto';
-import { ErrorMessages } from '@app/common/constants/error-messages';
-import { SuccessMessages } from '@app/common/constants/success-messages';
+import { ErrorMessages } from '@app/common/strings/error-messages';
+import { SuccessMessages } from '@app/common/strings/success-messages';
 
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectRepository(User) private UserRepository: Repository<User>,
+    @InjectRepository(User) private userRepository: Repository<User>,
 
     private readonly accountTypeService: AccountTypesService,
   ) {}
 
   async updateHashedRefreshToken(dto: UpdateRefreshTokenDto) {
-    return await this.UserRepository.update(
+    return await this.userRepository.update(
       { id: dto.userId },
       { hashedRefreshToken: dto.hashedRefreshToken },
     );
   }
 
   async create(createUserDto: CreateUserDto) {
-    const user = await this.UserRepository.save(
-      this.UserRepository.create(createUserDto),
+    const user = await this.userRepository.save(
+      this.userRepository.create(createUserDto),
     );
     await this.accountTypeService.saveOne(user.id, AccountRole.FREE);
     return user;
   }
 
   async remove(userId: string) {
-    const result = await this.UserRepository.delete({ id: userId });
+    const result = await this.userRepository.delete({ id: userId });
     if (result.affected === 0) {
       throw new NotFoundException(ErrorMessages.userNotFound);
     }
@@ -44,11 +43,11 @@ export class UsersService {
   }
 
   async findAll() {
-    return this.UserRepository.find();
+    return this.userRepository.find();
   }
 
   async findByEmail(email: string) {
-    return await this.UserRepository.findOne({
+    return await this.userRepository.findOne({
       where: {
         email,
       },
@@ -56,7 +55,7 @@ export class UsersService {
   }
 
   async findByEmailWithPassword(email: string) {
-    return await this.UserRepository.findOne({
+    return await this.userRepository.findOne({
       where: {
         email,
       },
@@ -65,17 +64,17 @@ export class UsersService {
   }
 
   async findByDisplayName(displayName: string) {
-    return await this.UserRepository.findOne({
+    return await this.userRepository.findOne({
       where: { displayName },
     });
   }
 
   async findUsersByIds(userIds: string[]) {
-    return this.UserRepository.findBy({ id: In(userIds) });
+    return this.userRepository.findBy({ id: In(userIds) });
   }
 
   async findOne(userId: string) {
-    return this.UserRepository.findOne({
+    return this.userRepository.findOne({
       where: { id: userId },
       select: {
         id: true,
@@ -90,7 +89,7 @@ export class UsersService {
   }
 
   async returnProfile(userId: string): Promise<UserResponseObject> {
-    const user = await this.UserRepository.findOne({
+    const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: { accountType: true },
       select: {

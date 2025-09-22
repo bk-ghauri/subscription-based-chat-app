@@ -13,7 +13,7 @@ import { AuthJwtPayload } from '@app/auth/types/auth-jwtPayload';
 import * as argon2 from 'argon2';
 import { CreateUserDto } from '@app/users/dto/create-user.dto';
 import { LoginResponseObject } from '@app/auth/dto/login-response';
-import { ErrorMessages } from '@app/common/constants/error-messages';
+import { ErrorMessages } from '@app/common/strings/error-messages';
 import { TokenService } from './token.service';
 
 @Injectable()

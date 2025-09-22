@@ -16,6 +16,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { AttachmentsService } from './attachments.service';
 import express from 'express';
 import { Public } from '@app/auth/decorators/public.decorator';
+import { UserId } from '@app/common/decorators/user-id.decorator';
 
 @UseGuards(JwtAuthGuard)
 @Controller('attachments')
@@ -25,32 +26,17 @@ export class AttachmentsController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadAttachment(
     @UploadedFile() file: Express.Multer.File,
-    @Req() req: any,
+    @UserId() userId: string,
   ) {
-    const user = req.user.id;
     if (!file) {
       throw new BadRequestException('File is required');
     }
     // service will save metadata but leave message=null for now
-    return this.attachmentService.saveUnlinkedAttachment(file, user);
+    return this.attachmentService.create(file, userId);
   }
 
-  // @Get(':id')
-  // async getAttachment(
-  //   @Param('id') id: string,
-  //   @Req() req: any,
-  //   @Res() res: express.Response,
-  // ) {
-  //   const user = req.user.id;
-  //   const filePath = await this.attachmentService.getSecureFilePath(id, user);
-
-  //   // Stream the file
-  //   return res.sendFile(filePath);
-  // }
-
   @Get(':id/signed-url')
-  async getSignedUrl(@Param('id') id: string, @Req() req: any) {
-    const userId = req.user.id;
+  async getSignedUrl(@Param('id') id: string, @UserId() userId: string) {
     const signedUrl = this.attachmentService.getSignedUrl(id, userId);
     return signedUrl;
   }

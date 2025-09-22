@@ -21,8 +21,8 @@ import { AccountRole } from '@app/account-types/types/account-type.enum';
 import { ConversationCreatorResponse } from './responses/conversation-creator-response';
 import { AddMembersDto } from './dto/add-members.dto';
 import { AccountTypesService } from '@app/account-types/account-types.service';
-import { ErrorMessages } from '@app/common/constants/error-messages';
-import { SuccessMessages } from '@app/common/constants/success-messages';
+import { ErrorMessages } from '@app/common/strings/error-messages';
+import { SuccessMessages } from '@app/common/strings/success-messages';
 
 @Injectable()
 export class ConversationsService {

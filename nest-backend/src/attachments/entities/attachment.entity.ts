@@ -1,12 +1,4 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  ManyToOne,
-  OneToMany,
-  OneToOne,
-  Unique,
-} from 'typeorm';
+import { Entity, Column, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import {
   IsUrl,
@@ -15,9 +7,8 @@ import {
   IsString,
   IsPositive,
   Max,
-  IsDate,
 } from 'class-validator';
-import { ValidationMessages } from '@app/common/constants/validation-messages';
+import { ValidationMessages } from '@app/common/strings/validation-messages';
 import { MessageAttachment } from '@app/message-attachments/entities/message-attachment.entity';
 import { BaseEntity } from '@app/common/entities/base.entity';
 

@@ -48,27 +48,10 @@ import { MessageAttachment } from './message-attachments/entities/message-attach
         MessageAttachment,
       ],
       namingStrategy: new SnakeNamingStrategy(),
-      synchronize: true,
-      dropSchema: true,
+      synchronize: false,
+      dropSchema: false,
     }),
-    MulterModule.register({
-      dest: MEDIA_ATTACHMENTS_DIR,
-      limits: {
-        fileSize: 50 * 1024 * 1024, // 50MB max
-      },
-      fileFilter: (req, file, cb) => {
-        const allowedTypes = [
-          'image/jpeg',
-          'image/png',
-          'application/pdf',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        ];
-        if (!allowedTypes.includes(file.mimetype)) {
-          return cb(new Error('Unsupported file type'), false);
-        }
-        cb(null, true);
-      },
-    }),
+
     ConfigModule.forRoot({
       isGlobal: true, // Makes ConfigModule available in every module
       envFilePath: '.env',
