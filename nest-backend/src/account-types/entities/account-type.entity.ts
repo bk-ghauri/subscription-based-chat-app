@@ -2,10 +2,11 @@ import { Entity, PrimaryColumn, Column, OneToOne, JoinColumn } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { AccountRole } from '../types/account-type.enum';
 import { IsEnum } from 'class-validator';
+import { BaseEntity } from '@app/common/entities/base.entity';
 
 @Entity('account_types')
-export class AccountType {
-  @PrimaryColumn('uuid')
+export class AccountType extends BaseEntity {
+  @Column({ type: 'uuid', name: 'user_id' })
   userId: string; // FK to User
 
   @OneToOne(() => User, { onDelete: 'CASCADE', nullable: false })

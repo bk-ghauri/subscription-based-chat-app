@@ -20,9 +20,6 @@ import { AttachmentsModule } from '@app/attachments/attachments.module';
 
 @Module({
   imports: [
-    //AuthModule,
-    ConfigModule.forFeature(jwtConfig),
-    JwtModule.registerAsync(jwtConfig.asProvider()),
     TypeOrmModule.forFeature([Message]),
     UsersModule,
     ConversationsModule,

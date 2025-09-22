@@ -22,6 +22,6 @@ export class CreateConversationDto {
   @ApiProperty()
   @IsArray()
   @ArrayNotEmpty()
-  @IsUUID('4', { each: true })
+  @IsUUID('4', { each: true }) // @PrimaryGeneratedColumn('uuid') generates UUID v4 by default
   memberIds: string[];
 }

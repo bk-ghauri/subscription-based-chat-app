@@ -15,18 +15,16 @@ export class RefreshJwtStrategy extends PassportStrategy(
 ) {
   constructor(
     @Inject(refreshJwtConfig.KEY)
-    private refrshJwtConfiguration: config.ConfigType<typeof refreshJwtConfig>,
+    private refreshJwtConfiguration: config.ConfigType<typeof refreshJwtConfig>,
     private authService: AuthService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: refrshJwtConfiguration.secret,
+      secretOrKey: refreshJwtConfiguration.secret,
       ignoreExpiration: false,
       passReqToCallback: true,
     });
   }
-
-  // authorization: Bearer sldfk;lsdkf'lskald'sdkf;sdl
 
   validate(req: Request, payload: AuthJwtPayload) {
     const authHeader = req.get('authorization');
@@ -34,8 +32,8 @@ export class RefreshJwtStrategy extends PassportStrategy(
       throw new UnauthorizedException('Authorization header missing');
     }
 
-    const refreshToken = authHeader.replace('Bearer', '').trim();
-    const userId = payload.sub;
+    const refreshToken = authHeader.split(' ')[1];
+    const userId = payload.userId;
     return this.authService.validateRefreshToken(userId, refreshToken);
   }
 }

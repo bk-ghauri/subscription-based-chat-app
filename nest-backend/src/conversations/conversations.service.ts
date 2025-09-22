@@ -11,16 +11,18 @@ import { ConversationMember } from '@app/conversation-members/entities/conversat
 import { InjectRepository } from '@nestjs/typeorm';
 import { Conversation } from './entities/conversation.entity';
 import { User } from '@app/users/entities/user.entity';
-import { ConvMemberDto } from '@app/conversation-members/dto/conversation-member.dto';
+import { ConversationMemberResponse } from '@app/conversation-members/responses/conversation-member';
 import { ConversationMembersService } from '@app/conversation-members/conversation-members.service';
 import { UsersService } from '@app/users/users.service';
 import { ConversationTypeEnum } from './types/conversation.enum';
-import { ReturnConversationDto } from './dto/return-conversation.dto';
+import { ConversationResponse } from './responses/conversation-response';
 import { ConversationRole } from '@app/conversation-members/types/conversation-member.enum';
 import { AccountRole } from '@app/account-types/types/account-type.enum';
-import { CreatedByDto } from './dto/created-by.dto';
+import { ConversationCreatorResponse } from './responses/conversation-creator-response';
 import { AddMembersDto } from './dto/add-members.dto';
 import { AccountTypesService } from '@app/account-types/account-types.service';
+import { ErrorMessages } from '@app/common/constants/error-messages';
+import { SuccessMessages } from '@app/common/constants/success-messages';
 
 @Injectable()
 export class ConversationsService {
@@ -38,30 +40,30 @@ export class ConversationsService {
 
   // Helper: format response
 
-  private toConversationResponseDto(
-    conv: Conversation,
+  private toConversationResponse(
+    conversation: Conversation,
     memberRows: ConversationMember[],
-  ): ReturnConversationDto {
-    const members: ConvMemberDto[] = memberRows.map((r) => ({
+  ): ConversationResponse {
+    const members: ConversationMemberResponse[] = memberRows.map((r) => ({
       id: r.userId,
       displayName: r.user.displayName,
       avatar: r.user.avatarUrl,
       role: r.conversationRole as ConversationRole,
     }));
 
-    const createdBy: CreatedByDto | null = conv.createdBy
+    const createdBy: ConversationCreatorResponse | null = conversation.createdBy
       ? {
-          id: conv.createdBy.id,
-          displayName: conv.createdBy.displayName,
-          avatar: conv.createdBy.avatarUrl,
+          id: conversation.createdBy.id,
+          displayName: conversation.createdBy.displayName,
+          avatar: conversation.createdBy.avatarUrl,
         }
       : null;
 
-    const response: ReturnConversationDto = {
-      id: conv.id,
-      type: conv.type,
-      name: conv.name ?? null,
-      createdAt: conv.createdAt,
+    const response: ConversationResponse = {
+      id: conversation.id,
+      type: conversation.type,
+      name: conversation.name ?? null,
+      createdAt: conversation.createdAt,
       createdBy,
       members,
     };
@@ -71,18 +73,14 @@ export class ConversationsService {
 
   private validateDm(userId: string, dto: CreateConversationDto) {
     if (dto.type !== ConversationTypeEnum.DM) {
-      throw new BadRequestException(
-        `DTO type must be "DM" for a direct message.`,
-      );
+      throw new BadRequestException(ErrorMessages.invalidConversationType);
     }
     if (!dto.memberIds || dto.memberIds.length !== 1) {
-      throw new BadRequestException(
-        'DM must contain exactly one other user in memberIds.',
-      );
+      throw new BadRequestException(ErrorMessages.invalidMemberCount);
     }
     const otherUserId = dto.memberIds[0];
     if (otherUserId === userId) {
-      throw new BadRequestException("You can't create a DM with yourself.");
+      throw new BadRequestException(ErrorMessages.dmWithSelf);
     }
   }
 
@@ -92,22 +90,18 @@ export class ConversationsService {
     otherUserId: string,
     existing: Conversation,
   ) {
-    const conv = await this.conversationRepository.findOne({
-      where: { id: existing.id },
-      relations: ['createdBy'],
-    });
+    const conversation = await this.findOneWithCreator(existing.id);
 
-    if (!conv) {
-      throw new NotFoundException(
-        'Conversation not found after initial query.',
-      );
+    if (!conversation) {
+      throw new NotFoundException(ErrorMessages.conversationNotFound);
     }
 
     const memberRows =
-      await this.conversationMemberService.getMembersByConversationId(conv.id);
+      await this.conversationMemberService.getMembersByConversationId(
+        conversation.id,
+      );
 
-    this.logger.log(`DM between ${userId} and ${otherUserId} already exists.`);
-    return this.toConversationResponseDto(conv, memberRows);
+    return this.toConversationResponse(conversation, memberRows);
   }
 
   // DM creation (1:1)
@@ -139,31 +133,31 @@ export class ConversationsService {
       });
 
       if (users.length !== 2) {
-        throw new NotFoundException('One or both users do not exist.');
+        throw new NotFoundException(ErrorMessages.userNotFound);
       }
 
       const createdByUser = users.find((u) => u.id === userId)!;
 
-      const conv = manager.create(Conversation, {
+      const conversation = manager.create(Conversation, {
         type: ConversationTypeEnum.DM,
         name: null,
         createdBy: createdByUser,
       });
 
-      const savedConv = await manager.save(conv);
+      const savedConversation = await manager.save(conversation);
 
       // memberships: creator and other user
       const rows = [
         manager.create(ConversationMember, {
-          conversation: savedConv,
-          conversation_id: savedConv.id,
+          conversation: savedConversation,
+          conversation_id: savedConversation.id,
           user_id: userId,
           user: users.find((u) => u.id === userId),
           conversation_role: ConversationRole.MEMBER,
         }),
         manager.create(ConversationMember, {
-          conversation: savedConv,
-          conversation_id: savedConv.id,
+          conversation: savedConversation,
+          conversation_id: savedConversation.id,
           user_id: otherUserId,
           user: users.find((u) => u.id === otherUserId),
           conversation_role: ConversationRole.MEMBER,
@@ -173,25 +167,23 @@ export class ConversationsService {
       await manager.save(rows);
 
       const memberRows = await manager.find(ConversationMember, {
-        where: { conversationId: savedConv.id },
-        relations: ['user'],
+        where: { conversationId: savedConversation.id },
+        relations: { user: true },
       });
 
       // ensure createdBy is attached for response
-      const convWithCreator = await manager.findOne(Conversation, {
-        where: { id: savedConv.id },
-        relations: ['createdBy'],
+      const conversationWithCreator = await manager.findOne(Conversation, {
+        where: { id: savedConversation.id },
+        relations: { createdBy: true },
       });
 
-      return this.toConversationResponseDto(convWithCreator!, memberRows);
+      return this.toConversationResponse(conversationWithCreator!, memberRows);
     });
   }
 
   private async validateGroup(userId: string, dto: CreateConversationDto) {
     if (dto.type !== ConversationTypeEnum.GROUP) {
-      throw new BadRequestException(
-        'DTO type must be "GROUP" for group conversations.',
-      );
+      throw new BadRequestException(ErrorMessages.invalidConversationType);
     }
 
     // Only PREMIUM can create groups — check account type
@@ -199,9 +191,7 @@ export class ConversationsService {
 
     const role = acct?.role ?? AccountRole.FREE;
     if (role !== AccountRole.PREMIUM) {
-      throw new ForbiddenException(
-        'Only PREMIUM users can create group conversations.',
-      );
+      throw new ForbiddenException(ErrorMessages.noGroupPrivilege);
     }
 
     // Normalize member IDs (unique + ensure creator included)
@@ -212,7 +202,7 @@ export class ConversationsService {
     const users = await this.userService.findUsersByIds(uniqueIds);
 
     if (users.length !== uniqueIds.length) {
-      throw new BadRequestException('One or more memberIds are invalid.');
+      throw new BadRequestException(ErrorMessages.userNotFound);
     }
     return { uniqueIds, users };
   }
@@ -228,19 +218,19 @@ export class ConversationsService {
     return this.dataSource.transaction(async (manager) => {
       const createdByUser = users.find((u) => u.id === userId)!;
 
-      const conv = manager.create(Conversation, {
+      const conversation = manager.create(Conversation, {
         type: ConversationTypeEnum.GROUP,
         name: dto.name ?? null,
         createdBy: createdByUser,
       });
 
-      const savedConv = await manager.save(conv);
+      const savedConversation = await manager.save(conversation);
 
       // create membership rows, creator becomes ADMIN
       const rows = users.map((u) =>
         manager.create(ConversationMember, {
-          conversation: savedConv,
-          conversationId: savedConv.id,
+          conversation: savedConversation,
+          conversationId: savedConversation.id,
           userId: u.id,
           user: u,
           conversationRole:
@@ -251,26 +241,24 @@ export class ConversationsService {
       await manager.save(rows);
 
       const memberRows = await manager.find(ConversationMember, {
-        where: { conversationId: savedConv.id },
-        relations: ['user'],
+        where: { conversationId: savedConversation.id },
+        relations: { user: true },
       });
 
-      const convWithCreator = await manager.findOne(Conversation, {
-        where: { id: savedConv.id },
-        relations: ['createdBy'],
+      const conversationWithCreator = await manager.findOne(Conversation, {
+        where: { id: savedConversation.id },
+        relations: { createdBy: true },
       });
 
-      return this.toConversationResponseDto(convWithCreator!, memberRows);
+      return this.toConversationResponse(conversationWithCreator!, memberRows);
     });
   }
 
   async validateMembership(userId: string, conversationId: string) {
-    const conversation = await this.conversationRepository.findOne({
-      where: { id: conversationId },
-    });
+    const conversation = await this.findOne(conversationId);
 
     if (!conversation) {
-      return { success: false, message: 'Conversation not found' };
+      return { success: false, message: ErrorMessages.conversationNotFound };
     }
 
     const membership =
@@ -282,7 +270,7 @@ export class ConversationsService {
     if (!membership) {
       return {
         success: false,
-        message: 'You are not a member of this conversation',
+        message: ErrorMessages.notConversationMember,
       };
     }
 
@@ -308,11 +296,11 @@ export class ConversationsService {
     }
 
     // Format each conversation using helper
-    const response: ReturnConversationDto[] = Array.from(
+    const response: ConversationResponse[] = Array.from(
       conversationMap.entries(),
     ).map(([_, memberRows]) => {
       const conversation = memberRows[0].conversation;
-      return this.toConversationResponseDto(conversation, memberRows);
+      return this.toConversationResponse(conversation, memberRows);
     });
 
     return response;
@@ -324,14 +312,14 @@ export class ConversationsService {
     removedUserId: string,
   ) {
     // Load conversation
-    const conv = await this.findOne(conversationId);
+    const conversation = await this.findOne(conversationId);
 
-    if (!conv) {
-      throw new NotFoundException('Conversation not found.');
+    if (!conversation) {
+      throw new NotFoundException(ErrorMessages.conversationNotFound);
     }
 
-    if (conv.type !== ConversationTypeEnum.GROUP) {
-      throw new BadRequestException('Only group conversations can be left.');
+    if (conversation.type !== ConversationTypeEnum.GROUP) {
+      throw new BadRequestException(ErrorMessages.cannotLeaveDm);
     }
 
     // Check both users are part of the conversation
@@ -349,25 +337,21 @@ export class ConversationsService {
       );
 
     if (!userMembership) {
-      throw new ForbiddenException(
-        'You are not a member of this conversation.',
-      );
+      throw new ForbiddenException(ErrorMessages.notConversationMember);
     }
 
     if (!removedUserMembership) {
-      throw new ForbiddenException(
-        'User is not a member of this conversation.',
-      );
+      throw new ForbiddenException(ErrorMessages.notConversationMember);
     }
 
     const isAdmin = userMembership.conversationRole === ConversationRole.ADMIN;
 
     if (userId !== removedUserId && !isAdmin) {
-      throw new ForbiddenException('Only group admin can delete other users.');
+      throw new ForbiddenException(ErrorMessages.notGroupAdmin);
     }
 
     if (userId === removedUserId && isAdmin) {
-      throw new BadRequestException('Admin cannot leave the conversation.');
+      throw new BadRequestException(ErrorMessages.adminCannotLeave);
     }
 
     await this.conversationMemberService.removeMember(
@@ -377,7 +361,7 @@ export class ConversationsService {
 
     return {
       success: true,
-      message: 'Member removed successfully.',
+      message: SuccessMessages.memberRemoved,
     };
   }
 
@@ -387,16 +371,14 @@ export class ConversationsService {
     dto: AddMembersDto,
   ) {
     // Load conversation
-    const conv = await this.findOne(conversationId);
+    const conversation = await this.findOne(conversationId);
 
-    if (!conv) {
-      throw new NotFoundException('Conversation not found.');
+    if (!conversation) {
+      throw new NotFoundException(ErrorMessages.conversationNotFound);
     }
 
-    if (conv.type !== ConversationTypeEnum.GROUP) {
-      throw new BadRequestException(
-        'You can only add members to group conversations.',
-      );
+    if (conversation.type !== ConversationTypeEnum.GROUP) {
+      throw new BadRequestException(ErrorMessages.invalidConversationType);
     }
 
     // Verify actor is a member
@@ -407,18 +389,17 @@ export class ConversationsService {
       );
 
     if (!actorMembership) {
-      throw new ForbiddenException(
-        'You are not a member of this conversation.',
-      );
+      throw new ForbiddenException(ErrorMessages.notConversationMember);
     }
 
     if (actorMembership.conversationRole !== ConversationRole.ADMIN) {
-      throw new ForbiddenException('Only group admins can add members.');
+      throw new ForbiddenException(ErrorMessages.notGroupAdmin);
     }
+
     // Validate provided users exist
     const users = await this.userService.findUsersByIds(dto.newMemberIds);
     if (users.length !== dto.newMemberIds.length) {
-      throw new BadRequestException('One or more userIds are invalid.');
+      throw new BadRequestException(ErrorMessages.userNotFound);
     }
 
     // Filter out users already in the group
@@ -432,7 +413,7 @@ export class ConversationsService {
     if (filteredUsers.length === 0) {
       return {
         success: true,
-        message: 'All provided users are already members.',
+        message: SuccessMessages.userAlreadyMember,
       };
     }
 
@@ -451,30 +432,35 @@ export class ConversationsService {
 
     return {
       success: true,
-      message: `${filteredUsers.length} member(s) added successfully.`,
+      message: SuccessMessages.memberAdded,
     };
   }
 
-  async findOneWithMembers(id: string): Promise<ReturnConversationDto> {
-    const conv = await this.conversationRepository.findOne({
-      where: { id },
-      relations: ['createdBy'],
-    });
+  async findOneWithCreatorAndMembers(
+    id: string,
+  ): Promise<ConversationResponse> {
+    const conversation = await this.findOneWithCreator(id);
 
-    if (!conv) {
-      throw new NotFoundException(`Conversation ${id} not found`);
+    if (!conversation) {
+      throw new NotFoundException(ErrorMessages.conversationNotFound);
     }
 
     const memberRows =
       await this.conversationMemberService.getMembersByConversationId(id);
 
-    return this.toConversationResponseDto(conv, memberRows);
+    return this.toConversationResponse(conversation, memberRows);
   }
 
-  findOne(id: string) {
-    return this.conversationRepository.findOne({
+  async findOneWithCreator(id: string) {
+    return await this.conversationRepository.findOne({
       where: { id },
-      relations: ['createdBy'],
+      relations: { createdBy: true },
+    });
+  }
+
+  async findOne(id: string) {
+    return await this.conversationRepository.findOne({
+      where: { id },
     });
   }
 }

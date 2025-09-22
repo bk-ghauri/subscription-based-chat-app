@@ -9,6 +9,7 @@ import { JwtStrategy } from './utils/JwtStrategy';
 import refreshJwtConfig from './config/refresh-jwt.config';
 import { RefreshJwtStrategy } from './utils/RefreshStrategy';
 import { UsersModule } from '@app/users/users.module';
+import { TokenService } from './token.service';
 
 @Module({
   imports: [
@@ -18,7 +19,13 @@ import { UsersModule } from '@app/users/users.module';
     UsersModule,
   ],
   controllers: [AuthController],
-  providers: [LocalStrategy, RefreshJwtStrategy, JwtStrategy, AuthService],
-  exports: [AuthService, JwtModule],
+  providers: [
+    LocalStrategy,
+    RefreshJwtStrategy,
+    JwtStrategy,
+    AuthService,
+    TokenService,
+  ],
+  exports: [AuthService, TokenService],
 })
 export class AuthModule {}

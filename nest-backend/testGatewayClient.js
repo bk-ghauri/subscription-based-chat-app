@@ -6,9 +6,9 @@ const SERVER_URL = 'http://localhost:3000';
 
 // Insert the JWT you got from your REST login
 const TOKEN =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkYWIzODhiNC1jNjAyLTQ1ZWUtOTFmZC1kMjljNTVhYzVlOWYiLCJpYXQiOjE3NTgwMjAyNzcsImV4cCI6MTc1ODAzMTA3N30.hYOMHc3e4WZn1bqpz0bvhRTlNLslSvA-kpHxsCHDZ7o';
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI5YmNmOTcwOC05MmJkLTQxMmYtYmIzMi1iYTIxMTY3ZjBiNTciLCJpYXQiOjE3NTgyNjM5NTMsImV4cCI6MTc1ODI3NDc1M30.Yg32kNeKqmA1GhCRLJw8gmnYbgmMP7VEb4SwGkYExDU';
 // Conversation you already created via REST
-const CONVERSATION_ID = '7ff1d1f4-c3b3-4cf3-ab56-9f3d32fd3cf3';
+const CONVERSATION_ID = 'b28fc307-ae81-4208-a0fc-5f5d16c29041';
 
 /**
  * 1. Initialize socket.io client

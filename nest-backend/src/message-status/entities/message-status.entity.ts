@@ -5,15 +5,18 @@ import {
   Index,
   PrimaryColumn,
   JoinColumn,
+  Unique,
 } from 'typeorm';
 import { Message } from '@app/messages/entities/message.entity';
 import { User } from '@app/users/entities/user.entity';
 import { MessageStatusEnum } from '../types/message-status.enum';
 import { IsDate, IsEnum } from 'class-validator';
+import { BaseEntity } from '@app/common/entities/base.entity';
 
+@Unique(['messageId', 'receiverId'])
 @Entity('message_statuses')
-export class MessageStatus {
-  @PrimaryColumn({ type: 'uuid', name: 'message_id' })
+export class MessageStatus extends BaseEntity {
+  @Column({ type: 'uuid', name: 'message_id' })
   messageId: string;
 
   @ManyToOne(() => Message, (message) => message.statuses, {
@@ -23,7 +26,7 @@ export class MessageStatus {
   @JoinColumn({ name: 'message_id' })
   message: Message;
 
-  @PrimaryColumn({ type: 'uuid', name: 'receiver_id' })
+  @Column({ type: 'uuid', name: 'receiver_id' })
   receiverId: string;
 
   @ManyToOne(() => User, (user) => user.messageStatuses, {

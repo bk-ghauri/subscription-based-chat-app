@@ -23,8 +23,8 @@ import { MessageStatusModule } from './message-status/message-status.module';
 import { AccountTypesModule } from './account-types/account-types.module';
 import { MessageStatus } from './message-status/entities/message-status.entity';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
-import { MulterModule } from '@nestjs/platform-express';
-import { MEDIA_ATTACHMENTS_DIR } from './common/constants';
+import { MessageAttachmentsModule } from './message-attachments/message-attachments.module';
+import { MessageAttachment } from './message-attachments/entities/message-attachment.entity';
 
 @Module({
   imports: [
@@ -45,10 +45,11 @@ import { MEDIA_ATTACHMENTS_DIR } from './common/constants';
         Subscription,
         Message,
         MessageStatus,
+        MessageAttachment,
       ],
       namingStrategy: new SnakeNamingStrategy(),
       synchronize: true,
-      dropSchema: false,
+      dropSchema: true,
     }),
     MulterModule.register({
       dest: MEDIA_ATTACHMENTS_DIR,
@@ -82,6 +83,7 @@ import { MEDIA_ATTACHMENTS_DIR } from './common/constants';
     ConversationMembersModule,
     MessageStatusModule,
     AccountTypesModule,
+    MessageAttachmentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
