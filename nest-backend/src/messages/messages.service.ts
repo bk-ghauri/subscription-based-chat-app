@@ -5,10 +5,12 @@ import { Repository } from 'typeorm';
 import { UsersService } from '@app/users/users.service';
 import { ConversationsService } from '@app/conversations/conversations.service';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ReturnMessageDto } from './dto/return-message.dto';
-import { MessageSenderDto } from './dto/message-sender.dto';
-import { MessageAttachmentDto } from '@app/attachments/dto/message-attachment.dto';
-import { MessageStatusDto } from '@app/message-status/dto/message-status.dto';
+import { MessageResponseObject } from './responses/message-response';
+import { MessageSenderResponse } from './responses/message-sender-response';
+import { MessageAttachmentResponse } from '@app/attachments/responses/message-attachment-response';
+import { MessageStatusResponse } from '@app/message-status/responses/message-status-response';
+import { ErrorMessages } from '@app/common/constants/error-messages';
+import { SuccessMessages } from '@app/common/constants/success-messages';
 
 @Injectable()
 export class MessagesService {
@@ -26,11 +28,12 @@ export class MessagesService {
       dto.conversationId,
     );
 
-    if (!conversation) throw new NotFoundException('Conversation not found');
+    if (!conversation)
+      throw new NotFoundException(ErrorMessages.conversationNotFound);
 
     const sender = await this.userService.findOne(dto.senderId);
 
-    if (!sender) throw new NotFoundException('Sender not found');
+    if (!sender) throw new NotFoundException(ErrorMessages.senderNotFound);
 
     const message = this.messageRepository.create({
       body: dto.body,
@@ -54,31 +57,35 @@ export class MessagesService {
   ) {
     const messages = await this.messageRepository.find({
       where: { conversation: { id: conversationId } },
-      relations: ['sender', 'attachments', 'conversation', 'statuses'],
+      relations: {
+        sender: true,
+        attachmentLinks: { attachment: true },
+        conversation: true,
+        statuses: true,
+      },
       order: { createdAt: 'ASC' },
       skip: (page - 1) * limit, //offset
       take: limit,
       withDeleted: false, // Exclude soft-deleted messages (optional param, false by default)
     });
 
-    // Transform into safe DTOs to prevent leaking sensitive info to frontend
     return messages.map((msg) => this.toMessageResponse(msg));
   }
   // Helper to transform Message entity to safe DTO
-  private toMessageResponse(msg: Message): ReturnMessageDto {
-    const sender: MessageSenderDto = {
+  private toMessageResponse(msg: Message): MessageResponseObject {
+    const sender: MessageSenderResponse = {
       id: msg.sender.id,
       displayName: msg.sender.displayName,
       avatar: msg.sender.avatarUrl,
     };
 
-    const attachments: MessageAttachmentDto[] =
-      msg.attachments?.map((a) => ({
-        id: a.id,
-        url: a.fileUrl,
+    const attachments: MessageAttachmentResponse[] =
+      msg.attachmentLinks?.map((link) => ({
+        id: link.attachment.id,
+        url: link.attachment.fileUrl,
       })) || [];
 
-    const statuses: MessageStatusDto[] =
+    const statuses: MessageStatusResponse[] =
       msg.statuses?.map((s) => ({
         receiverId: s.receiverId,
         status: s.status,
@@ -86,7 +93,7 @@ export class MessagesService {
         readAt: s.readAt,
       })) || [];
 
-    const response: ReturnMessageDto = {
+    const response: MessageResponseObject = {
       id: msg.id,
       body: msg.body,
       createdAt: msg.createdAt,
@@ -103,25 +110,23 @@ export class MessagesService {
     });
 
     if (result.affected === 0) {
-      throw new NotFoundException(`Message with ID ${messageId} not found`);
+      throw new NotFoundException(ErrorMessages.messageNotFound);
     }
   }
 
   async findByIdWithConversation(messageId: string) {
     return this.messageRepository.findOne({
       where: { id: messageId },
-      relations: ['conversation'],
+      relations: { conversation: true },
     });
   }
 
   async remove(id: string) {
     const result = await this.messageRepository.softDelete(id);
 
-    if (result.affected === 0) {
-      throw new NotFoundException(
-        `Message with ID ${id} not found or already deleted`,
-      );
+    if (!result.affected) {
+      throw new NotFoundException(ErrorMessages.messageNotFound);
     }
-    return `Message #${id} has been soft-deleted`;
+    return { success: true, message: SuccessMessages.messageDeleted };
   }
 }

@@ -5,12 +5,9 @@ import {
   Body,
   Get,
   UseGuards,
-  Req,
-  Request,
   Patch,
   Param,
   Delete,
-  ForbiddenException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -22,7 +19,8 @@ import {
   ApiOperation,
   ApiResponse,
 } from '@nestjs/swagger';
-import { UserResponseDto } from './dto/user-response.dto';
+import { UserResponseObject } from './responses/user-response';
+import { UserId } from '@app/common/decorators/user-id.decorator';
 
 @UseGuards(JwtAuthGuard)
 @Controller('users')
@@ -38,12 +36,12 @@ export class UsersController {
   @ApiOperation({ summary: `Used to view user's account details` })
   @ApiOkResponse({
     description: 'Profile returned',
-    type: UserResponseDto,
+    type: UserResponseObject,
   })
   @ApiForbiddenResponse({ description: 'Unauthorized' })
   @ApiBearerAuth()
-  getProfile(@Req() req) {
-    return this.userService.returnProfile(req.user.id);
+  getProfile(@UserId() userId: string) {
+    return this.userService.returnProfile(userId);
   }
 
   // @Patch(':id')
@@ -55,8 +53,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Used to delete a user form database' })
   @ApiOkResponse({ description: 'Account deleted successfully' })
   @ApiBearerAuth()
-  async remove(@Request() req) {
-    const userIdFromToken = req.user.id;
-    return this.userService.remove(userIdFromToken);
+  async remove(@UserId() userId: string) {
+    return this.userService.remove(userId);
   }
 }

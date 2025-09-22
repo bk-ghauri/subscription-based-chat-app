@@ -8,7 +8,7 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { ReturnMessageDto } from './dto/return-message.dto';
+import { MessageResponseObject } from './responses/message-response';
 
 @Controller('conversations/:conversationId/messages')
 @UseGuards(JwtAuthGuard)
@@ -32,7 +32,7 @@ export class MessagesController {
   })
   @ApiOkResponse({
     description: 'List of messages fetched',
-    type: [ReturnMessageDto],
+    type: [MessageResponseObject],
   })
   @ApiBearerAuth()
   async getMessages(

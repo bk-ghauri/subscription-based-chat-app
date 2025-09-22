@@ -6,7 +6,6 @@ import {
   Param,
   Delete,
   UseGuards,
-  Req,
   Patch,
 } from '@nestjs/common';
 import { ConversationsService } from './conversations.service';
@@ -22,7 +21,8 @@ import {
   ApiOkResponse,
   ApiOperation,
 } from '@nestjs/swagger';
-import { ReturnConversationDto } from './dto/return-conversation.dto';
+import { ConversationResponse } from './responses/conversation-response';
+import { UserId } from '@app/common/decorators/user-id.decorator';
 
 @UseGuards(JwtAuthGuard)
 @Controller('conversations')
@@ -35,11 +35,10 @@ export class ConversationsController {
   @ApiOperation({ summary: 'Return all conversations of the user' })
   @ApiOkResponse({
     description: 'Conversations returned',
-    type: ReturnConversationDto,
+    type: ConversationResponse,
   })
   @ApiBearerAuth()
-  async getUserConversations(@Req() req) {
-    const userId = req.user?.id;
+  async getUserConversations(@UserId() userId: string) {
     return this.conversationsService.findByUser(userId);
   }
 
@@ -47,13 +46,15 @@ export class ConversationsController {
 
   @Post('dm')
   @ApiOperation({ summary: 'Create a new direct message (DM)' })
-  @ApiOkResponse({ description: 'DM created', type: ReturnConversationDto })
+  @ApiOkResponse({
+    description: 'DM created',
+    type: ConversationResponse,
+  })
   @ApiBadRequestResponse({ description: 'Invalid details' })
   @ApiNotFoundResponse({ description: 'Invalid user IDs' })
   @ApiBody({ type: CreateConversationDto })
   @ApiBearerAuth()
-  async createDm(@Req() req, @Body() dto: CreateConversationDto) {
-    const userId = req.user?.id;
+  async createDm(@UserId() userId: string, @Body() dto: CreateConversationDto) {
     return this.conversationsService.createDmConversation(userId, dto);
   }
 
@@ -61,7 +62,10 @@ export class ConversationsController {
 
   @Post('group')
   @ApiOperation({ summary: 'Create a new group' })
-  @ApiOkResponse({ description: 'Group created', type: ReturnConversationDto })
+  @ApiOkResponse({
+    description: 'Group created',
+    type: ConversationResponse,
+  })
   @ApiBadRequestResponse({
     description: 'Invalid users IDs or conversation type',
   })
@@ -70,8 +74,10 @@ export class ConversationsController {
   })
   @ApiBody({ type: CreateConversationDto })
   @ApiBearerAuth()
-  async createGroup(@Req() req, @Body() dto: CreateConversationDto) {
-    const userId = req.user?.id;
+  async createGroup(
+    @UserId() userId: string,
+    @Body() dto: CreateConversationDto,
+  ) {
     return this.conversationsService.createGroupConversation(userId, dto);
   }
 
@@ -81,7 +87,7 @@ export class ConversationsController {
   @ApiNotFoundResponse({ description: 'Conversation not found' })
   @ApiBearerAuth()
   async findOne(@Param('id') id: string) {
-    return this.conversationsService.findOneWithMembers(id);
+    return this.conversationsService.findOneWithCreatorAndMembers(id);
   }
 
   @Patch(':id/members')
@@ -97,12 +103,12 @@ export class ConversationsController {
   })
   @ApiBody({ type: AddMembersDto })
   async addGroupMembers(
-    @Req() req,
+    @UserId() userId: string,
     @Param('id') conversationId: string,
     @Body() dto: AddMembersDto,
   ) {
     return this.conversationsService.addGroupMembers(
-      req.user.id,
+      userId,
       conversationId,
       dto,
     );
@@ -116,11 +122,10 @@ export class ConversationsController {
   @ApiForbiddenResponse({ description: 'Only admin can delete other members' })
   @ApiBearerAuth()
   async deleteGroupMember(
-    @Req() req,
+    @UserId() userId: string,
     @Param('id') conversationId: string,
     @Param('removedUserId') removedUserId: string,
   ) {
-    const userId = req.user.id;
     return this.conversationsService.deleteGroupMember(
       conversationId,
       userId,

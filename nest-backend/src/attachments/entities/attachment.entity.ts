@@ -3,10 +3,9 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
-  JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
-import { Message } from '@app/messages/entities/message.entity';
 import {
   IsUrl,
   Length,
@@ -16,12 +15,12 @@ import {
   Max,
   IsDate,
 } from 'class-validator';
+import { ValidationMessages } from '@app/common/constants/validation-messages';
+import { MessageAttachment } from '@app/message-attachments/entities/message-attachment.entity';
+import { BaseEntity } from '@app/common/entities/base.entity';
 
 @Entity('attachments')
-export class Attachment {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
+export class Attachment extends BaseEntity {
   @Column({ type: 'varchar', length: 500 })
   @IsUrl()
   @Length(5, 500)
@@ -35,20 +34,12 @@ export class Attachment {
   @Column({ type: 'int' })
   @IsInt()
   @IsPositive()
-  @Max(50 * 1024 * 1024, { message: 'File cannot exceed 50 MB' })
+  @Max(50 * 1024 * 1024, { message: ValidationMessages.fileTooLarge })
   size: number;
-
-  @IsDate()
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  createdAt: Date;
 
   @ManyToOne(() => User, (user) => user.attachments, { onDelete: 'SET NULL' })
   uploaderId: User;
 
-  @ManyToOne(() => Message, (msg) => msg.attachments, {
-    onDelete: 'CASCADE',
-    nullable: false,
-  })
-  @JoinColumn({ name: 'message_id' })
-  message: Message;
+  @OneToMany(() => MessageAttachment, (ma) => ma.attachment)
+  messageLinks: MessageAttachment[];
 }

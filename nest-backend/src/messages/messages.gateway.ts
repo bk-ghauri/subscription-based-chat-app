@@ -20,6 +20,8 @@ import * as jwt from 'jsonwebtoken';
 import { MessageStatusService } from '@app/message-status/message-status.service';
 import { MessageStatusEnum } from '@app/message-status/types/message-status.enum';
 import { ConversationTypeEnum } from '@app/conversations/types/conversation.enum';
+import { ErrorMessages } from '@app/common/constants/error-messages';
+import { TokenService } from '@app/auth/token.service';
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class MessagesGateway
@@ -30,16 +32,16 @@ export class MessagesGateway
 
   private readonly logger = new Logger(MessagesGateway.name);
   private onlineUsers = new Map<string, Set<string>>(); // userId -> socketIds
+  private offlineTimers = new Map<string, NodeJS.Timeout>();
+  private readonly OFFLINE_GRACE_MS = 15_000; // 15s grace period
 
   constructor(
-    @Inject(jwtConfig.KEY)
-    private readonly jwtConfiguration: config.ConfigType<typeof jwtConfig>,
     private readonly messagesService: MessagesService,
-    //private jwtService: JwtService,
     private readonly userService: UsersService,
     private readonly conversationsService: ConversationsService,
     private readonly messageService: MessagesService,
     private readonly messageStatusService: MessageStatusService,
+    private readonly tokenService: TokenService,
   ) {}
 
   async handleConnection(client: Socket) {
@@ -47,20 +49,13 @@ export class MessagesGateway
       client.handshake.auth?.token ||
       client.handshake.headers?.authorization?.split(' ')[1];
 
-    if (!this.jwtConfiguration.secret) {
-      throw new Error('JWT secret is not configured');
-    }
-
-    // Fetch user from DB using user_id
     try {
-      //const payload = this.jwtService.verify(token);
-
-      const payload: any = jwt.verify(token, this.jwtConfiguration.secret); // <-- use secret directly since injecting JwtService was causing issues
-      const user = await this.userService.findOne(payload.sub);
+      const userId = await this.tokenService.verifyAccessToken(token);
+      const user = await this.userService.findOne(userId);
 
       if (!user) {
         client.disconnect();
-        return { success: false, message: 'Unauthorized' };
+        return { success: false, message: ErrorMessages.unauthorized };
       }
 
       (client as any).user = {
@@ -69,7 +64,14 @@ export class MessagesGateway
       };
 
       //Presence tracking
+
       const socketId = client.id;
+
+      const existingTimer = this.offlineTimers.get(user.id);
+      if (existingTimer) {
+        clearTimeout(existingTimer);
+        this.offlineTimers.delete(user.id);
+      }
 
       if (!this.onlineUsers.has(user.id)) {
         this.onlineUsers.set(user.id, new Set());
@@ -82,7 +84,7 @@ export class MessagesGateway
 
       client.emit('authenticated', { success: true });
     } catch (err) {
-      this.logger.error('Invalid client connection:', err.message);
+      this.logger.error(ErrorMessages.invalidConnectionError, err.message);
       client.disconnect();
     }
   }
@@ -96,10 +98,24 @@ export class MessagesGateway
 
     if (userSockets) {
       userSockets.delete(socketId);
+
       if (userSockets.size === 0) {
-        this.onlineUsers.delete(user.id);
-        this.server.emit('userOffline', { userId: user.id });
-        this.logger.log(`${user.displayName} disconnected (offline)`);
+        // Start grace timeout before marking offline
+        const timer = setTimeout(() => {
+          // Double-check they didn’t reconnect during timeout
+          const socketsAfterTimeout = this.onlineUsers.get(user.id);
+          if (!socketsAfterTimeout || socketsAfterTimeout.size === 0) {
+            this.onlineUsers.delete(user.id);
+            this.server.emit('userOffline', { userId: user.id });
+            this.logger.log(`${user.displayName} went offline`);
+          }
+          this.offlineTimers.delete(user.id);
+        }, this.OFFLINE_GRACE_MS); // 15s grace period
+
+        this.offlineTimers.set(user.id, timer);
+        this.logger.log(
+          `${user.displayName} disconnect detected, waiting before offline...`,
+        );
       } else {
         this.logger.log(
           `${user.displayName} disconnected (still online in other tabs)`,
@@ -116,7 +132,7 @@ export class MessagesGateway
     const user = (client as any).user;
 
     if (!user) {
-      return { success: false, message: 'Unauthorized' };
+      return { success: false, message: ErrorMessages.unauthorized };
     }
 
     //verify if user is part of the conversation
@@ -144,7 +160,7 @@ export class MessagesGateway
   ) {
     const user = (client as any).user;
     if (!user) {
-      return { success: false, message: 'Unauthorized' };
+      return { success: false, message: ErrorMessages.unauthorized };
     }
 
     const message = await this.messagesService.create({

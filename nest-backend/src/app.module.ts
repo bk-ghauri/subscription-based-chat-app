@@ -23,6 +23,8 @@ import { MessageStatusModule } from './message-status/message-status.module';
 import { AccountTypesModule } from './account-types/account-types.module';
 import { MessageStatus } from './message-status/entities/message-status.entity';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
+import { MessageAttachmentsModule } from './message-attachments/message-attachments.module';
+import { MessageAttachment } from './message-attachments/entities/message-attachment.entity';
 
 @Module({
   imports: [
@@ -43,10 +45,11 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
         Subscription,
         Message,
         MessageStatus,
+        MessageAttachment,
       ],
       namingStrategy: new SnakeNamingStrategy(),
-      synchronize: false,
-      dropSchema: false,
+      synchronize: true,
+      dropSchema: true,
     }),
     ConfigModule.forRoot({
       isGlobal: true, // Makes ConfigModule available in every module
@@ -62,6 +65,7 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
     ConversationMembersModule,
     MessageStatusModule,
     AccountTypesModule,
+    MessageAttachmentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

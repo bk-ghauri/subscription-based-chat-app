@@ -19,9 +19,6 @@ import { ConversationMembersModule } from '@app/conversation-members/conversatio
 
 @Module({
   imports: [
-    //AuthModule,
-    ConfigModule.forFeature(jwtConfig),
-    JwtModule.registerAsync(jwtConfig.asProvider()),
     TypeOrmModule.forFeature([Message]),
     UsersModule,
     ConversationsModule,
