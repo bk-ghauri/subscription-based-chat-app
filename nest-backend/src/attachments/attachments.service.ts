@@ -1,4 +1,3 @@
-// src/attachments/attachments.service.ts
 import {
   Injectable,
   BadRequestException,
@@ -49,7 +48,7 @@ export class AttachmentsService {
         await fs.unlink(file.path);
       } catch (err) {
         // log but don’t crash
-        this.logger.error('Failed to cleanup oversized file', err);
+        this.logger.error(ErrorMessages.CLEANUP_FAILED, err);
       }
 
       throw new BadRequestException(ErrorMessages.FILE_TOO_LARGE(planLimit));
@@ -88,19 +87,22 @@ export class AttachmentsService {
     } catch (err) {
       // Cleanup file if DB save fails
       await fs.unlink(file.path).catch(() => {});
-      throw new InternalServerErrorException('Could not save attachment');
+      throw new InternalServerErrorException(
+        ErrorMessages.ATTACHMENT_NOT_SAVED,
+      );
     }
   }
 
   async getSignedUrl(attachmentId: string, userId: string) {
     const attachment = await this.findOne(attachmentId);
-    if (!attachment) throw new NotFoundException('Attachment not found');
+    if (!attachment)
+      throw new NotFoundException(ErrorMessages.ATTACHMENT_NOT_FOUND);
 
     const hasAccess = await this.messageAttachmentService.checkUserAccess(
       attachmentId,
       userId,
     );
-    if (!hasAccess) throw new ForbiddenException('You do not have access');
+    if (!hasAccess) throw new ForbiddenException(ErrorMessages.UNAUTHORIZED);
 
     const token = this.signedUrlService.generateAttachmentToken(attachmentId);
     return { url: `/attachments/download/${attachmentId}?token=${token}` };
@@ -109,10 +111,11 @@ export class AttachmentsService {
   async getDownloadPath(id: string, token: string) {
     const attachmentId = this.signedUrlService.verifyAttachmentToken(token);
     if (attachmentId !== id)
-      throw new ForbiddenException('You do not have access');
+      throw new ForbiddenException(ErrorMessages.UNAUTHORIZED);
 
     const attachment = await this.findOne(id);
-    if (!attachment) throw new NotFoundException('Attachment not found');
+    if (!attachment)
+      throw new NotFoundException(ErrorMessages.ATTACHMENT_NOT_FOUND);
 
     const absPath = attachment.fileUrl;
     return absPath;

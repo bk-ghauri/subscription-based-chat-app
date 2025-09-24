@@ -1,19 +1,13 @@
+import { ErrorMessages } from '@app/common/strings/error-messages';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-// import { ConfigService } from '@nestjs/config';
+
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class SignedUrlService {
-  constructor(
-    private readonly jwtService: JwtService,
-    // private readonly configService: ConfigService,
-  ) {}
+  constructor(private readonly jwtService: JwtService) {}
 
-  generateAttachmentToken(
-    attachmentId: string,
-    // expiresIn = this.configService.get('url.expiry'),
-  ): string {
-    // return this.jwtService.sign({ attachmentId }, { expiresIn });
+  generateAttachmentToken(attachmentId: string): string {
     return this.jwtService.sign({ attachmentId });
   }
 
@@ -22,7 +16,7 @@ export class SignedUrlService {
       const payload = this.jwtService.verify<{ attachmentId: string }>(token);
       return payload.attachmentId;
     } catch (e) {
-      throw new UnauthorizedException('Invalid or expired link');
+      throw new UnauthorizedException(ErrorMessages.INVALID_LINK);
     }
   }
 }

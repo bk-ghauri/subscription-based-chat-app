@@ -23,4 +23,7 @@ export const ErrorMessages = {
   INVALID_CONNECTION_ERROR: 'Invalid client connection:',
   FILE_TOO_LARGE: (limit: number) =>
     `File exceeds your plan limit of ${limit} MB`,
+  ATTACHMENT_NOT_SAVED: 'Could not save attachment',
+  CLEANUP_FAILED: 'Failed to cleanup oversized file',
+  INVALID_LINK: 'Invalid or expired link',
 };
