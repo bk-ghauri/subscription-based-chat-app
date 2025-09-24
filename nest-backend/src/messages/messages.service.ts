@@ -37,11 +37,11 @@ export class MessagesService {
     );
 
     if (!conversation)
-      throw new NotFoundException(ErrorMessages.conversationNotFound);
+      throw new NotFoundException(ErrorMessages.CONVERSATION_NOT_FOUND);
 
     const sender = await this.userService.findOne(dto.senderId);
 
-    if (!sender) throw new NotFoundException(ErrorMessages.senderNotFound);
+    if (!sender) throw new NotFoundException(ErrorMessages.SENDER_NOT_FOUND);
 
     const message = this.messageRepository.create({
       body: dto.body,
@@ -60,7 +60,7 @@ export class MessagesService {
         uniqueAttachmentIds.map(async (attachmentId) => {
           const attachment = await this.attachmentService.findOne(attachmentId);
           if (!attachment) {
-            throw new BadRequestException(ErrorMessages.attachmentNotFound);
+            throw new BadRequestException(ErrorMessages.ATTACHMENT_NOT_FOUND);
           }
 
           return this.messageAttachmentService.create({
@@ -141,7 +141,7 @@ export class MessagesService {
     });
 
     if (result.affected === 0) {
-      throw new NotFoundException(ErrorMessages.messageNotFound);
+      throw new NotFoundException(ErrorMessages.MESSAGE_NOT_FOUND);
     }
   }
 
@@ -156,12 +156,12 @@ export class MessagesService {
     const result = await this.messageRepository.softDelete(id);
 
     if (!result.affected) {
-      throw new NotFoundException(ErrorMessages.messageNotFound);
+      throw new NotFoundException(ErrorMessages.MESSAGE_NOT_FOUND);
     }
 
     // Clean up bridge table entries
     await this.messageAttachmentService.softDeleteByMessageId(id);
 
-    return { success: true, message: SuccessMessages.messageDeleted };
+    return { success: true, message: SuccessMessages.MESSAGE_DELETED };
   }
 }

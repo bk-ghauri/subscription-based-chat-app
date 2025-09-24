@@ -37,9 +37,9 @@ export class UsersService {
   async remove(userId: string) {
     const result = await this.userRepository.delete({ id: userId });
     if (result.affected === 0) {
-      throw new NotFoundException(ErrorMessages.userNotFound);
+      throw new NotFoundException(ErrorMessages.USER_NOT_FOUND);
     }
-    return { message: SuccessMessages.userDeleted };
+    return { message: SuccessMessages.USER_DELETED };
   }
 
   async findAll() {
@@ -102,7 +102,7 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException(ErrorMessages.userNotFound);
+      throw new NotFoundException(ErrorMessages.USER_NOT_FOUND);
     }
 
     const response: UserResponseObject = {

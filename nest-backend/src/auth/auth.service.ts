@@ -33,14 +33,14 @@ export class AuthService {
       createUserDto.email,
     );
     if (existingUser) {
-      throw new BadRequestException(ErrorMessages.emailExists);
+      throw new BadRequestException(ErrorMessages.EMAIL_EXISTS);
     }
 
     const existingDisplayName = await this.userService.findByDisplayName(
       createUserDto.displayName,
     );
     if (existingDisplayName) {
-      throw new BadRequestException(ErrorMessages.displayNameTaken);
+      throw new BadRequestException(ErrorMessages.DISPLAY_NAME_TAKEN);
     }
 
     const newUser = await this.userService.create({
@@ -65,10 +65,10 @@ export class AuthService {
 
   async validateUser(email: string, password: string) {
     const user = await this.userService.findByEmailWithPassword(email);
-    if (!user) throw new UnauthorizedException(ErrorMessages.userNotFound);
+    if (!user) throw new UnauthorizedException(ErrorMessages.USER_NOT_FOUND);
     const isPasswordMatch = await this.comparePassword(password, user.password);
     if (!isPasswordMatch)
-      throw new UnauthorizedException(ErrorMessages.invalidCredentials);
+      throw new UnauthorizedException(ErrorMessages.INVALID_CREDENTIALS);
 
     return { id: user.id };
   }
@@ -129,7 +129,7 @@ export class AuthService {
     );
 
     if (!refreshTokenMatches)
-      throw new UnauthorizedException(ErrorMessages.invalidToken);
+      throw new UnauthorizedException(ErrorMessages.INVALID_TOKEN);
 
     return { id: userId };
   }
@@ -143,7 +143,7 @@ export class AuthService {
 
   async validateJwtUser(userId: string) {
     const user = await this.userService.findOne(userId);
-    if (!user) throw new UnauthorizedException(ErrorMessages.userNotFound);
+    if (!user) throw new UnauthorizedException(ErrorMessages.USER_NOT_FOUND);
     return { id: user.id };
   }
 

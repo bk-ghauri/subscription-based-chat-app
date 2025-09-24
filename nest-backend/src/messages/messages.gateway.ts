@@ -52,7 +52,7 @@ export class MessagesGateway
 
       if (!user) {
         client.disconnect();
-        return { success: false, message: ErrorMessages.unauthorized };
+        return { success: false, message: ErrorMessages.UNAUTHORIZED };
       }
 
       (client as any).user = {
@@ -81,7 +81,7 @@ export class MessagesGateway
 
       client.emit('authenticated', { success: true });
     } catch (err) {
-      this.logger.error(ErrorMessages.invalidConnectionError, err.message);
+      this.logger.error(ErrorMessages.INVALID_CONNECTION_ERROR, err.message);
       client.disconnect();
     }
   }
@@ -129,7 +129,7 @@ export class MessagesGateway
     const user = (client as any).user;
 
     if (!user) {
-      return { success: false, message: ErrorMessages.unauthorized };
+      return { success: false, message: ErrorMessages.UNAUTHORIZED };
     }
 
     //verify if user is part of the conversation
@@ -157,7 +157,7 @@ export class MessagesGateway
   ) {
     const user = (client as any).user;
     if (!user) {
-      return { success: false, message: ErrorMessages.unauthorized };
+      return { success: false, message: ErrorMessages.UNAUTHORIZED };
     }
 
     const message = await this.messagesService.create(dto);
@@ -252,7 +252,7 @@ export class MessagesGateway
   ) {
     await this.messageService.softDelete(data.messageId);
 
-    this.server.in(data.conversationId).emit('messageDeleted', {
+    this.server.in(data.conversationId).emit('MESSAGE_DELETED', {
       messageId: data.messageId,
     });
   }

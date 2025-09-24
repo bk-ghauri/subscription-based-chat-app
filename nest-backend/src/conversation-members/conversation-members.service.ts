@@ -51,7 +51,7 @@ export class ConversationMembersService {
       userId,
     });
     if (!member) {
-      throw new NotFoundException(ErrorMessages.conversationMemberNotFound);
+      throw new NotFoundException(ErrorMessages.CONVERSATION_MEMBER_NOT_FOUND);
     }
     await this.conversationMemberRepository.remove(member);
   }

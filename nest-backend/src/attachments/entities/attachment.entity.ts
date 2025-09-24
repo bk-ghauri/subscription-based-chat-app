@@ -27,7 +27,7 @@ export class Attachment extends BaseEntity {
   @Column({ type: 'int' })
   @IsInt()
   @IsPositive()
-  @Max(50 * 1024 * 1024, { message: ValidationMessages.fileTooLarge })
+  @Max(50 * 1024 * 1024, { message: ValidationMessages.FILE_TOO_LARGE })
   size: number;
 
   @ManyToOne(() => User, (user) => user.attachments, { onDelete: 'SET NULL' })

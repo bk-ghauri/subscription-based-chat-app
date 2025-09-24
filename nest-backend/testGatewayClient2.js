@@ -114,7 +114,7 @@ socket.on('messageReadByAll', (data) => {
   console.log('👀 Message read by all:', data);
 });
 
-socket.on('messageDeleted', (data) => {
+socket.on('MESSAGE_DELETED', (data) => {
   console.log('🗑️ Message deleted:', data);
 });
 

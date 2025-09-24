@@ -1,3 +1,3 @@
 export const ValidationMessages = {
-  fileTooLarge: 'File cannot exceed 50 MB',
+  FILE_TOO_LARGE: 'File cannot exceed 50 MB',
 };

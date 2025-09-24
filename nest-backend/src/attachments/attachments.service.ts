@@ -52,7 +52,7 @@ export class AttachmentsService {
         this.logger.error('Failed to cleanup oversized file', err);
       }
 
-      throw new BadRequestException(ErrorMessages.fileTooLarge(planLimit));
+      throw new BadRequestException(ErrorMessages.FILE_TOO_LARGE(planLimit));
     }
 
     const fileUrl = path.join(MEDIA_ATTACHMENTS_DIR, file.filename);
