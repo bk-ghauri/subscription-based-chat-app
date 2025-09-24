@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AccountType } from './entities/account-type.entity';
 import { Repository } from 'typeorm';
-import { AccountRole } from './types/account-type.enum';
+import { CreateAccountTypeDto } from './dto/create-account-type.dto';
+import { UpdateAccountTypeDto } from './dto/update-account-type.dto';
 
 @Injectable()
 export class AccountTypesService {
@@ -17,7 +18,14 @@ export class AccountTypesService {
     });
   }
 
-  async saveOne(userId: string, type: AccountRole) {
-    await this.accountTypeRepository.save({ userId, type });
+  async saveOne(dto: CreateAccountTypeDto) {
+    await this.accountTypeRepository.save(dto);
+  }
+
+  async updateOne(dto: UpdateAccountTypeDto) {
+    await this.accountTypeRepository.update(
+      { userId: dto.userId },
+      { role: dto.role },
+    );
   }
 }

@@ -1,15 +1,10 @@
 import { UsersService } from '@app/users/users.service';
 import {
   BadRequestException,
-  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { compare } from 'bcrypt';
-import refreshJwtConfig from './config/refresh-jwt.config';
-import * as config from '@nestjs/config';
-import { AuthJwtPayload } from '@app/auth/types/auth-jwtPayload';
 import * as argon2 from 'argon2';
 import { CreateUserDto } from '@app/users/dto/create-user.dto';
 import { LoginResponseObject } from '@app/auth/dto/login-response';
@@ -20,9 +15,6 @@ import { TokenService } from './token.service';
 export class AuthService {
   constructor(
     private userService: UsersService,
-    // private jwtService: JwtService,
-    // @Inject(refreshJwtConfig.KEY)
-    // private refreshTokenConfig: config.ConfigType<typeof refreshJwtConfig>,
 
     private readonly tokenService: TokenService,
   ) {}
@@ -90,18 +82,6 @@ export class AuthService {
     return response;
   }
 
-  // async generateTokens(userId: string) {
-  //   const payload: AuthJwtPayload = { userId };
-  //   const [accessToken, refreshToken] = await Promise.all([
-  //     this.jwtService.signAsync(payload),
-  //     this.jwtService.signAsync(payload, this.refreshTokenConfig),
-  //   ]);
-  //   return {
-  //     accessToken,
-  //     refreshToken,
-  //   };
-  // }
-
   async refreshToken(userId: string) {
     const { accessToken, refreshToken } =
       await this.tokenService.generateTokens(userId);
@@ -119,7 +99,7 @@ export class AuthService {
   }
 
   async validateRefreshToken(userId: string, refreshToken: string) {
-    const user = await this.userService.findOne(userId);
+    const user = await this.userService.findOneWithRefreshToken(userId);
     if (!user || !user.hashedRefreshToken)
       throw new UnauthorizedException(ErrorMessages.INVALID_REQUEST);
 

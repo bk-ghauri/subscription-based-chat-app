@@ -30,7 +30,10 @@ export class UsersService {
     const user = await this.userRepository.save(
       this.userRepository.create(createUserDto),
     );
-    await this.accountTypeService.saveOne(user.id, AccountRole.FREE);
+    await this.accountTypeService.saveOne({
+      userId: user.id,
+      role: AccountRole.FREE,
+    });
     return user;
   }
 
@@ -73,6 +76,16 @@ export class UsersService {
     return this.userRepository.findBy({ id: In(userIds) });
   }
 
+  async findOneWithRefreshToken(userId: string) {
+    return this.userRepository.findOne({
+      where: { id: userId },
+      select: {
+        id: true,
+        hashedRefreshToken: true,
+      },
+    });
+  }
+
   async findOne(userId: string) {
     return this.userRepository.findOne({
       where: { id: userId },
@@ -82,9 +95,8 @@ export class UsersService {
         displayName: true,
         avatarUrl: true,
         createdAt: true,
-        accountType: true,
-        hashedRefreshToken: true,
       },
+      relations: { accountType: true },
     });
   }
 

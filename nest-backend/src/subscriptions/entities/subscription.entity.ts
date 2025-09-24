@@ -25,7 +25,7 @@ export class Subscription extends BaseEntity {
   @IsDate()
   @IsOptional()
   @Column({ type: 'timestamp', nullable: true })
-  currentPeriodEnd: Date;
+  currentPeriodEnd: Date | null;
 
   @ManyToOne(() => User, (user) => user.subscriptions, {
     nullable: false,

@@ -2,6 +2,7 @@ import 'module-alias/register';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '@app/app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -17,9 +18,9 @@ async function bootstrap() {
 
   SwaggerModule.setup('api', app, document);
 
-  await app.listen(process.env.PORT ?? 3000);
+  // Raw body only for Stripe webhook route
+  app.use('/webhooks/stripe', express.raw({ type: 'application/json' }));
 
-  const app2 = await NestFactory.create(AppModule);
-  await app2.listen(3001);
+  await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
