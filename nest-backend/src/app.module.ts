@@ -48,7 +48,7 @@ import { MessageAttachment } from './message-attachments/entities/message-attach
         MessageAttachment,
       ],
       namingStrategy: new SnakeNamingStrategy(),
-      synchronize: false,
+      synchronize: true,
       dropSchema: false,
     }),
 

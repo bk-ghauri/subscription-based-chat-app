@@ -4,6 +4,7 @@ export const ErrorMessages = {
   userNotFound: 'User not found!',
   messageNotFound: 'Message not found',
   attachmentNotFound: 'Attachment not found',
+  MESSAGE_ATTACHMENT_NOT_FOUND: 'Message attachment not found',
   senderNotFound: 'Sender not found',
   conversationNotFound: 'Conversation not found',
   invalidCredentials: 'Invalid credentials!',

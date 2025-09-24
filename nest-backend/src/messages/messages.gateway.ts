@@ -250,7 +250,7 @@ export class MessagesGateway
     @MessageBody() data: { messageId: string; conversationId: string },
     @ConnectedSocket() client: Socket,
   ) {
-    await this.messageService.remove(data.messageId);
+    await this.messageService.softDelete(data.messageId);
 
     this.server.in(data.conversationId).emit('messageDeleted', {
       messageId: data.messageId,

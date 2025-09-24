@@ -1,8 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { MessageAttachment } from './entities/message-attachment.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateMessageAttachmentDto } from './dto/create-message-attachment.dto';
+import { ErrorMessages } from '@app/common/strings/error-messages';
+import { SuccessMessages } from '@app/common/strings/success-messages';
 
 @Injectable()
 export class MessageAttachmentsService {
@@ -41,5 +43,20 @@ export class MessageAttachmentsService {
       .where('ma.attachmentId = :attachmentId', { attachmentId })
       .andWhere('user.id = :userId', { userId })
       .getExists();
+  }
+
+  async softDeleteByMessageId(messageId: string) {
+    const result = await this.messageAttachmentRepository.softDelete({
+      messageId,
+    });
+
+    if (!result.affected) {
+      throw new NotFoundException(ErrorMessages.MESSAGE_ATTACHMENT_NOT_FOUND);
+    }
+
+    return {
+      success: true,
+      message: SuccessMessages.MESSAGE_ATTACHMENT_DELETED,
+    };
   }
 }

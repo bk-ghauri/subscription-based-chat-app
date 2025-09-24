@@ -52,9 +52,12 @@ export class MessagesService {
     const saved = await this.messageRepository.save(message);
 
     // Link attachments (if any) through bridge table
+
+    const uniqueAttachmentIds = [...new Set(dto.attachmentIds)]; //ensure no duplicate attachments
+
     if (dto.attachmentIds?.length) {
       const messageAttachments = await Promise.all(
-        dto.attachmentIds.map(async (attachmentId) => {
+        uniqueAttachmentIds.map(async (attachmentId) => {
           const attachment = await this.attachmentService.findOne(attachmentId);
           if (!attachment) {
             throw new BadRequestException(ErrorMessages.attachmentNotFound);
@@ -149,12 +152,16 @@ export class MessagesService {
     });
   }
 
-  async remove(id: string) {
+  async softDelete(id: string) {
     const result = await this.messageRepository.softDelete(id);
 
     if (!result.affected) {
       throw new NotFoundException(ErrorMessages.messageNotFound);
     }
+
+    // Clean up bridge table entries
+    await this.messageAttachmentService.softDeleteByMessageId(id);
+
     return { success: true, message: SuccessMessages.messageDeleted };
   }
 }
