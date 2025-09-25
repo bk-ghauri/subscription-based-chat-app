@@ -7,7 +7,9 @@ import { BaseEntity } from '@app/common/entities/base.entity';
 @Unique(['stripeSubscriptionId'])
 @Entity('subscriptions')
 export class Subscription extends BaseEntity {
-  @Column({ name: 'stripe_subscription_id' })
+  @Column({ type: 'varchar', length: 255 })
+  @IsString()
+  @Length(5, 255)
   stripeSubscriptionId: string;
 
   @Column({ type: 'varchar', length: 255 })

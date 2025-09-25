@@ -4,12 +4,13 @@ import { Subscription } from './entities/subscription.entity';
 import { Repository } from 'typeorm';
 import { ErrorMessages } from '@app/common/strings/error-messages';
 import { StripeService } from './stripe.service';
-import { Logger } from '@nestjs/common';
+import { BadRequestException, Logger } from '@nestjs/common';
 import Stripe from 'stripe';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { SubscriptionStatus } from './types/subscription-status.enum';
 import { AccountRole } from '@app/account-types/types/account-type.enum';
 import { AccountTypesService } from '@app/account-types/account-types.service';
+import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 
 export class SubscriptionsService {
   private readonly logger = new Logger(SubscriptionsService.name);
@@ -23,44 +24,51 @@ export class SubscriptionsService {
     private readonly accountTypeService: AccountTypesService,
   ) {}
 
-  //   async createCheckoutSession(userId: string) {
-  //     const user = await this.userService.findOne(userId);
-  //     if (!user) {
-  //       throw new Error(ErrorMessages.USER_NOT_FOUND);
-  //     }
+  async createCheckoutSession(userId: string) {
+    const user = await this.userService.findOne(userId);
+    if (!user) {
+      throw new Error(ErrorMessages.USER_NOT_FOUND);
+    }
 
-  //     // If user doesn’t have a Stripe customer ID yet, create one
+    // Get all subscriptions of this user from DB
+    const subscriptions = await this.subscriptionRepository.find({
+      where: { user: { id: userId } },
+      order: { createdAt: 'DESC' }, // latestSubscription first if you want
+    });
 
-  //     const userSubscription = await this.findOneByUserId(userId);
+    // If no subscriptions exist, create new customer using email
+    if (subscriptions.length === 0) {
+      return this.stripeService.createSessionForNewCustomer(userId, user.email);
+    }
 
-  //     if (!userSubscription) {
-  //       const customer = await this.stripeService.client.customers.create({
-  //         email: user.email,
-  //         metadata: { userId: user.id },
-  //       });
-  //       const stripeCustomerId = customer.id;
-  //     }
+    // Check the most recent subscription status
+    const latestSubscription = subscriptions[0];
 
-  //     // ⚠️ replace with your actual Price ID from Stripe Dashboard
-  //     const priceId = process.env.STRIPE_PREMIUM_PRICE_ID;
+    if (latestSubscription.status === SubscriptionStatus.ACTIVE) {
+      return { success: true, message: 'Already subscribed' };
+    }
 
-  //     const session = await this.stripeService.client.checkout.sessions.create({
-  //       customer: stripeCustomerId,
-  //       mode: 'subscription',
-  //       payment_method_types: ['card'],
-  //       line_items: [{ price: priceId, quantity: 1 }],
-  //       success_url: `${process.env.FRONTEND_URL}/subscription/success`,
-  //       cancel_url: `${process.env.FRONTEND_URL}/subscription/cancel`,
-  //     });
+    // if (latestSubscription.status === SubscriptionStatus.PAST_DUE) {
+    //   // Redirect to billing portal
+    //   return this.stripeService.createBillingPortalSession(
+    //     latestSubscription.stripeCustomerId,
+    //   );
+    // }
 
-  //     return { url: session.url };
-  //   }
+    if (latestSubscription.status === SubscriptionStatus.CANCELED) {
+      // Same customer, new subscription
+      return this.stripeService.createSessionForExistingCustomer(
+        userId,
+        latestSubscription.stripeCustomerId,
+      );
+    }
+  }
 
   async handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     this.logger.log(`Handling checkout.session.completed: ${session.id}`);
 
-    const customerId = session.customer as string;
-    const subscriptionId = session.subscription as string;
+    const stripeCustomerId = session.customer as string;
+    const stripeSubscriptionId = session.subscription as string;
 
     // Stripe metadata: userId is set when you create the checkout session
     const userId = session.metadata?.userId;
@@ -69,41 +77,149 @@ export class SubscriptionsService {
       return;
     }
 
-    // Find user
+    return await this.activateSubscription(
+      userId,
+      stripeCustomerId,
+      stripeSubscriptionId,
+    );
+  }
+
+  async activateSubscription(
+    userId: string,
+    stripeCustomerId: string,
+    stripeSubscriptionId: string,
+  ) {
     const user = await this.userService.findOne(userId);
-    if (!user) {
-      this.logger.error(ErrorMessages.USER_NOT_FOUND);
+    if (!user) throw new Error('User not found');
+
+    const stripeSubscription =
+      await this.stripeService.client.subscriptions.retrieve(
+        stripeSubscriptionId,
+      );
+
+    const currentPeriodEnd = new Date(
+      stripeSubscription.items.data[0].current_period_end * 1000, //Convert Unix time (seconds) to Date (milliseconds)
+    );
+
+    // Check if stripeCustomerId exists for user
+    const userSubscription = await this.findOneByUserId(userId);
+    if (!userSubscription) {
+      // Save subscription
+      const subscription: CreateSubscriptionDto = {
+        userId,
+        stripeCustomerId,
+        stripeSubscriptionId,
+        currentPeriodEnd: null, // Not set until invoice.payment_succeeded webhook
+        status: SubscriptionStatus.PAST_DUE, // Default until invoice.payment_succeeded webhook
+      };
+
+      const savedSubscription = await this.subscriptionRepository.save(
+        this.subscriptionRepository.create({ ...subscription, user }),
+      );
+
+      return savedSubscription;
+    }
+  }
+
+  async handleInvoiceSucceeded(invoice: Stripe.Invoice) {
+    this.logger.log(`Handling invoice.payment_succeeded: ${invoice.id}`);
+
+    const stripeSubscriptionId =
+      invoice.parent?.subscription_details?.subscription;
+
+    if (!stripeSubscriptionId) {
+      this.logger.warn('Invoice has no subscription ID');
       return;
     }
 
-    // Check if subscription already exists
-    let subscription = await this.subscriptionRepository.findOne({
-      where: { stripeSubscriptionId: subscriptionId },
-    });
+    const subscription = await this.findOneByStripeSubscriptionId(
+      stripeSubscriptionId as string,
+    );
 
     if (!subscription) {
-      const dto: CreateSubscriptionDto = {
-        stripeSubscriptionId: subscriptionId,
-        stripeCustomerId: customerId,
-        status: SubscriptionStatus.ACTIVE, // initial assumption, Stripe will confirm with invoice events
-        currentPeriodEnd: null, // will be updated on invoice.succeeded
-        userId: user.id,
-      };
-      subscription = this.subscriptionRepository.create({ ...dto, user });
+      const stripeCustomerId = invoice.customer as string;
+      const stripeSubscriptionId = invoice.parent?.subscription_details
+        ?.subscription as string;
+
+      // Get the subscription from Stripe (to read metadata)
+      const stripeSubscription =
+        await this.stripeService.client.subscriptions.retrieve(
+          stripeSubscriptionId,
+        );
+
+      const userId = stripeSubscription.metadata?.userId; // ✅ comes from checkout.session metadata
+
+      if (!userId) {
+        this.logger.error(
+          `No userId metadata found for subscription ${stripeSubscriptionId}`,
+        );
+        return;
+      }
     }
 
-    await this.subscriptionRepository.save(subscription);
+    // Update current_period_end from Stripe invoice
+    const currentPeriodEnd = new Date(
+      invoice.lines.data[0].period.end * 1000, // Convert Unix time (seconds) to Date (milliseconds)
+    );
 
-    // Mark user as PREMIUM
+    const updateDto: UpdateSubscriptionDto = {
+      status: SubscriptionStatus.ACTIVE,
+      currentPeriodEnd,
+    };
+
+    await this.subscriptionRepository.update(
+      { stripeSubscriptionId: stripeSubscriptionId as string },
+      updateDto,
+    );
+    this.logger.log(`Subscription ${stripeSubscriptionId} marked ACTIVE`);
 
     await this.accountTypeService.updateOne({
-      userId: user.id,
+      userId: subscription.user.id,
       role: AccountRole.PREMIUM,
     });
+  }
 
-    this.logger.log(
-      `✅ Subscription linked: user=${user.id} subscription=${subscriptionId}`,
+  async handleInvoiceFailed(invoice: Stripe.Invoice) {
+    this.logger.warn(`Handling invoice.payment_failed: ${invoice.id}`);
+
+    const stripeSubscriptionId =
+      invoice.parent?.subscription_details?.subscription;
+
+    if (!stripeSubscriptionId) {
+      this.logger.warn('Invoice has no subscription ID');
+      return;
+    }
+    const subscription = await this.findOneByStripeSubscriptionId(
+      stripeSubscriptionId as string,
     );
+
+    if (!subscription) {
+      this.logger.error('Subscription not found');
+      return;
+    }
+
+    const updateDto: UpdateSubscriptionDto = {
+      status: SubscriptionStatus.PAST_DUE,
+    };
+
+    await this.subscriptionRepository.update(
+      { stripeSubscriptionId: stripeSubscriptionId as string },
+      updateDto,
+    );
+    this.logger.log(`Subscription ${stripeSubscriptionId} marked PAST_DUE`);
+  }
+
+  async findActiveSubscriptionByUserId(userId: string) {
+    return await this.subscriptionRepository.findOne({
+      where: {
+        user: { id: userId },
+        status: SubscriptionStatus.ACTIVE,
+      },
+      select: { id: true, stripeCustomerId: true },
+      relations: {
+        user: true,
+      },
+    });
   }
 
   async findOneByUserId(userId: string) {
@@ -111,10 +227,20 @@ export class SubscriptionsService {
       where: {
         user: { id: userId },
       },
-      select: { stripeCustomerId: true },
+      select: { id: true, stripeCustomerId: true },
       relations: {
         user: true,
       },
+    });
+  }
+
+  async findOneByStripeSubscriptionId(stripeSubscriptionId: string) {
+    return await this.subscriptionRepository.findOne({
+      where: {
+        stripeSubscriptionId,
+      },
+      select: { id: true, stripeSubscriptionId: true, stripeCustomerId: true },
+      relations: { user: true },
     });
   }
 }

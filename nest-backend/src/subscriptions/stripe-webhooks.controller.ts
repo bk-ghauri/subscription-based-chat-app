@@ -27,7 +27,7 @@ export class StripeWebhooksController {
     let event: Stripe.Event;
     try {
       event = this.stripeService.client.webhooks.constructEvent(
-        req.body,
+        req.body as Buffer,
         signature,
         webhookSecret,
       );
@@ -45,6 +45,19 @@ export class StripeWebhooksController {
             event.data.object as Stripe.Checkout.Session,
           );
           break;
+
+        case 'invoice.payment_succeeded':
+          await this.subscriptionsService.handleInvoiceSucceeded(
+            event.data.object as Stripe.Invoice,
+          );
+          break;
+
+        case 'invoice.payment_failed':
+          await this.subscriptionsService.handleInvoiceFailed(
+            event.data.object as Stripe.Invoice,
+          );
+          break;
+
         default:
           this.logger.debug(`Unhandled event type: ${event.type}`);
       }
