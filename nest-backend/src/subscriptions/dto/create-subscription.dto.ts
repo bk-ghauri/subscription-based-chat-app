@@ -23,7 +23,7 @@ export class CreateSubscriptionDto {
 
   @IsDate()
   @IsOptional()
-  currentPeriodEnd: Date | null;
+  currentPeriodEnd?: Date | null;
 
   @IsUUID()
   @IsNotEmpty()

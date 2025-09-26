@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AccountType } from './entities/account-type.entity';
 import { Repository } from 'typeorm';
 import { CreateAccountTypeDto } from './dto/create-account-type.dto';
 import { UpdateAccountTypeDto } from './dto/update-account-type.dto';
+import { ErrorMessages } from '@app/common/strings/error-messages';
 
 @Injectable()
 export class AccountTypesService {
@@ -23,9 +24,13 @@ export class AccountTypesService {
   }
 
   async updateOne(dto: UpdateAccountTypeDto) {
-    await this.accountTypeRepository.update(
+    const result = await this.accountTypeRepository.update(
       { userId: dto.userId },
       { role: dto.role },
     );
+
+    if (!result.affected) {
+      throw new NotFoundException(ErrorMessages.ACCOUNT_TYPE_NOT_FOUND);
+    }
   }
 }

@@ -39,6 +39,9 @@ export class StripeService {
       success_url: 'http://localhost:3000/subscriptions/success',
       cancel_url: 'http://localhost:3000/subscriptions/cancel',
       metadata: { userId },
+      subscription_data: {
+        metadata: { userId }, // we need this for handling invoice webhooks
+      },
     });
 
     return { url: session.url };
@@ -58,6 +61,9 @@ export class StripeService {
       success_url: 'http://localhost:3000/subscriptions/success',
       cancel_url: 'http://localhost:3000/subscriptions/cancel',
       metadata: { userId },
+      subscription_data: {
+        metadata: { userId }, // we need this for handling invoice webhooks
+      },
     });
 
     return { url: session.url };

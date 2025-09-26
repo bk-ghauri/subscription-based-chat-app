@@ -2,6 +2,7 @@ export const ErrorMessages = {
   EMAIL_EXISTS: 'A user with this email already exists',
   DISPLAY_NAME_TAKEN: 'This name is already taken',
   USER_NOT_FOUND: 'User not found!',
+  ACCOUNT_TYPE_NOT_FOUND: 'Account type not found',
   MESSAGE_NOT_FOUND: 'Message not found',
   ATTACHMENT_NOT_FOUND: 'Attachment not found',
   MESSAGE_ATTACHMENT_NOT_FOUND: 'Message attachment not found',

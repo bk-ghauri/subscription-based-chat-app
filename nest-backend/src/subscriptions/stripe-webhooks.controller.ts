@@ -58,6 +58,18 @@ export class StripeWebhooksController {
           );
           break;
 
+        case 'customer.subscription.updated':
+          await this.subscriptionsService.handleSubscriptionUpdated(
+            event.data.object as Stripe.Subscription,
+          );
+          break;
+
+        case 'customer.subscription.deleted':
+          await this.subscriptionsService.handleSubscriptionDeleted(
+            event.data.object as Stripe.Subscription,
+          );
+          break;
+
         default:
           this.logger.debug(`Unhandled event type: ${event.type}`);
       }
