@@ -1,6 +1,5 @@
 import {
   Injectable,
-  BadRequestException,
   InternalServerErrorException,
   Logger,
   NotFoundException,
@@ -11,8 +10,6 @@ import { Repository } from 'typeorm';
 import { Attachment } from './entities/attachment.entity';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { AccountTypesService } from '@app/account-types/account-types.service';
-import { AccountRole } from '@app/account-types/types/account-type.enum';
 import { CreateAttachmentDto } from './dto/create-attachment.dto';
 import { AttachmentResponse } from './responses/attachment-response';
 import { SignedUrlService } from './signed-url.service';
@@ -27,33 +24,12 @@ export class AttachmentsService {
   constructor(
     @InjectRepository(Attachment)
     private readonly attachmentRepository: Repository<Attachment>,
-    private readonly accountTypeService: AccountTypesService,
     private readonly signedUrlService: SignedUrlService,
     private readonly messageAttachmentService: MessageAttachmentsService,
     private readonly userService: UsersService,
   ) {}
 
   async create(file: Express.Multer.File, userId: string) {
-    const accountType = await this.accountTypeService.findOne(userId);
-
-    const planLimit =
-      accountType?.role === AccountRole.PREMIUM
-        ? 50 * 1024 * 1024
-        : 5 * 1024 * 1024;
-
-    if (file.size > planLimit) {
-      // Delete the uploaded file to avoid leftovers
-
-      try {
-        await fs.unlink(file.path);
-      } catch (err) {
-        // log but don’t crash
-        this.logger.error(ErrorMessages.CLEANUP_FAILED, err);
-      }
-
-      throw new BadRequestException(ErrorMessages.FILE_TOO_LARGE(planLimit));
-    }
-
     const fileUrl = path.join(MEDIA_ATTACHMENTS_DIR, file.filename);
 
     // Save metadata to DB
