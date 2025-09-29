@@ -23,6 +23,7 @@ import {
 } from '@nestjs/swagger';
 import { ConversationResponse } from './responses/conversation-response';
 import { UserId } from '@app/common/decorators/user-id.decorator';
+import { PremiumGuard } from '@app/account-types/guards/premium-guard';
 
 @UseGuards(JwtAuthGuard)
 @Controller('conversations')
@@ -44,7 +45,7 @@ export class ConversationsController {
 
   // Start a new DM
 
-  @Post('dm')
+  @Post('DMs')
   @ApiOperation({ summary: 'Create a new direct message (DM)' })
   @ApiOkResponse({
     description: 'DM created',
@@ -60,7 +61,7 @@ export class ConversationsController {
 
   // Create new group
 
-  @Post('group')
+  @Post('groups')
   @ApiOperation({ summary: 'Create a new group' })
   @ApiOkResponse({
     description: 'Group created',
@@ -74,6 +75,7 @@ export class ConversationsController {
   })
   @ApiBody({ type: CreateConversationDto })
   @ApiBearerAuth()
+  @UseGuards(PremiumGuard)
   async createGroup(
     @UserId() userId: string,
     @Body() dto: CreateConversationDto,
@@ -90,7 +92,7 @@ export class ConversationsController {
     return this.conversationsService.findOneWithCreatorAndMembers(id);
   }
 
-  @Patch(':id/members')
+  @Patch('groups/:id/add-members')
   @ApiOperation({ summary: 'Add members to an existing group' })
   @ApiBearerAuth()
   @ApiOkResponse({ description: 'Members added successfully' })
@@ -102,6 +104,7 @@ export class ConversationsController {
     description: 'You are not allowed to add members to this group',
   })
   @ApiBody({ type: AddMembersDto })
+  @UseGuards(PremiumGuard)
   async addGroupMembers(
     @UserId() userId: string,
     @Param('id') conversationId: string,
@@ -114,13 +117,14 @@ export class ConversationsController {
     );
   }
 
-  @Delete(':id/members/:removedUserId')
+  @Delete('groups/:id/remove-members/:removedUserId')
   @ApiOperation({ summary: 'Remove a group member/leave group' })
   @ApiOkResponse({ description: 'Removed group member successfully' })
   @ApiNotFoundResponse({ description: 'Conversation not found' })
   @ApiBadRequestResponse({ description: `Cannot leave this conversation` })
   @ApiForbiddenResponse({ description: 'Only admin can delete other members' })
   @ApiBearerAuth()
+  @UseGuards(PremiumGuard)
   async deleteGroupMember(
     @UserId() userId: string,
     @Param('id') conversationId: string,

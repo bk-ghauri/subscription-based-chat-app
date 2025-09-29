@@ -5,4 +5,5 @@ export const SuccessMessages = {
   MESSAGE_DELETED: 'Message has been soft-deleted',
   MESSAGE_ATTACHMENT_DELETED: 'Message attachment has been soft-deleted',
   USER_DELETED: 'User has been deleted',
+  SUBSCRIPTION_EXISTS: 'Subscription already exists',
 };

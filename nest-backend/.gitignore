@@ -60,4 +60,5 @@ package-lock.json
 testGraceTimeout.js
 testAttachment.js
 
-src/common/guards
+src/account-types
+src/attachments

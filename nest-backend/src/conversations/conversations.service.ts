@@ -17,10 +17,8 @@ import { UsersService } from '@app/users/users.service';
 import { ConversationTypeEnum } from './types/conversation.enum';
 import { ConversationResponse } from './responses/conversation-response';
 import { ConversationRole } from '@app/conversation-members/types/conversation-member.enum';
-import { AccountRole } from '@app/account-types/types/account-type.enum';
 import { ConversationCreatorResponse } from './responses/conversation-creator-response';
 import { AddMembersDto } from './dto/add-members.dto';
-import { AccountTypesService } from '@app/account-types/account-types.service';
 import { ErrorMessages } from '@app/common/strings/error-messages';
 import { SuccessMessages } from '@app/common/strings/success-messages';
 
@@ -31,8 +29,6 @@ export class ConversationsService {
   constructor(
     @InjectRepository(Conversation)
     private readonly conversationRepository: Repository<Conversation>,
-
-    private readonly accountTypeService: AccountTypesService,
     private readonly conversationMemberService: ConversationMembersService,
     private readonly userService: UsersService,
     private readonly dataSource: DataSource,
@@ -184,14 +180,6 @@ export class ConversationsService {
   private async validateGroup(userId: string, dto: CreateConversationDto) {
     if (dto.type !== ConversationTypeEnum.GROUP) {
       throw new BadRequestException(ErrorMessages.INVALID_CONVERSATION_TYPE);
-    }
-
-    // Only PREMIUM can create groups — check account type
-    const acct = await this.accountTypeService.findOne(userId);
-
-    const role = acct?.role ?? AccountRole.FREE;
-    if (role !== AccountRole.PREMIUM) {
-      throw new ForbiddenException(ErrorMessages.NO_GROUP_PRIVILEGE);
     }
 
     // Normalize member IDs (unique + ensure creator included)

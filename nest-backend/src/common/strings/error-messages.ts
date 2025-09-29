@@ -15,7 +15,7 @@ export const ErrorMessages = {
   INVALID_CONVERSATION_TYPE: 'Invalid conversation type',
   INVALID_MEMBER_COUNT: 'Invalid number of members for this conversation type',
   DM_WITH_SELF: 'You cannot create a DM with yourself',
-  NO_GROUP_PRIVILEGE: 'Only PREMIUM users can create groups',
+  NOT_PREMIUM: 'This feature is only for premium members',
   NOT_CONVERSATION_MEMBER: 'You are not a member of this conversation',
   CANNOT_LEAVE_DM: 'You cannot leave a DM conversation',
   NOT_GROUP_ADMIN: 'Only group admin can perform this action',
@@ -24,7 +24,8 @@ export const ErrorMessages = {
   INVALID_CONNECTION_ERROR: 'Invalid client connection:',
   FILE_TOO_LARGE: (limit: number) =>
     `File exceeds your plan limit of ${limit} MB`,
+  NO_FILE_ATTACHED: 'No file attached',
   ATTACHMENT_NOT_SAVED: 'Could not save attachment',
-  CLEANUP_FAILED: 'Failed to cleanup oversized file',
   INVALID_LINK: 'Invalid or expired link',
+  NO_BILLING_PORTAL: 'No billing portal available. Please subscribe first.',
 };

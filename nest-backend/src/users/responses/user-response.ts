@@ -1,6 +1,6 @@
-import { AccountRole } from '@app/account-types/types/account-type.enum';
+import { AccountRole } from '@app/account-types/types/account-role.enum';
 
-export class UserResponseObject {
+export class UserResponse {
   email: string;
   displayName: string;
   avatarUrl: string | null;

@@ -1,8 +1,16 @@
-import { Controller, Post, Req, Res, HttpCode, Logger } from '@nestjs/common';
-import type { Request, Response } from 'express';
+import {
+  Controller,
+  Post,
+  Headers,
+  Res,
+  HttpCode,
+  Logger,
+} from '@nestjs/common';
+import type { Response } from 'express';
 import { StripeService } from './stripe.service';
 import Stripe from 'stripe';
 import { SubscriptionsService } from './subscriptions.service';
+import { RawBody } from './decorators/raw-body.decorator';
 
 @Controller('webhooks/stripe')
 export class StripeWebhooksController {
@@ -15,8 +23,11 @@ export class StripeWebhooksController {
 
   @Post()
   @HttpCode(200)
-  async handleWebhook(@Req() req: Request, @Res() res: Response) {
-    const signature = req.headers['stripe-signature'] as string | undefined;
+  async handleWebhook(
+    @Headers('stripe-signature') signature: string,
+    @RawBody() rawBody: Buffer,
+    @Res() res: Response,
+  ) {
     const webhookSecret = this.stripeService.getWebhookSecret();
 
     if (!signature || !webhookSecret) {
@@ -27,7 +38,7 @@ export class StripeWebhooksController {
     let event: Stripe.Event;
     try {
       event = this.stripeService.client.webhooks.constructEvent(
-        req.body as Buffer,
+        rawBody,
         signature,
         webhookSecret,
       );
@@ -36,7 +47,7 @@ export class StripeWebhooksController {
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    this.logger.log(`✅ Verified event: ${event.type}`);
+    this.logger.log(`Verified event: ${event.type}`);
 
     try {
       switch (event.type) {

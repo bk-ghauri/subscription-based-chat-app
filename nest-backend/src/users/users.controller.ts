@@ -1,14 +1,5 @@
 import { JwtAuthGuard } from '@app/auth/utils/Guards';
-import {
-  Controller,
-  Post,
-  Body,
-  Get,
-  UseGuards,
-  Patch,
-  Param,
-  Delete,
-} from '@nestjs/common';
+import { Controller, Get, UseGuards, Delete } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -19,7 +10,7 @@ import {
   ApiOperation,
   ApiResponse,
 } from '@nestjs/swagger';
-import { UserResponseObject } from './responses/user-response';
+import { UserResponse } from './responses/user-response';
 import { UserId } from '@app/common/decorators/user-id.decorator';
 
 @UseGuards(JwtAuthGuard)
@@ -36,7 +27,7 @@ export class UsersController {
   @ApiOperation({ summary: `Used to view user's account details` })
   @ApiOkResponse({
     description: 'Profile returned',
-    type: UserResponseObject,
+    type: UserResponse,
   })
   @ApiForbiddenResponse({ description: 'Unauthorized' })
   @ApiBearerAuth()

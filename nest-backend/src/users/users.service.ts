@@ -4,8 +4,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { User } from '@app/users/entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { UserResponseObject } from './responses/user-response';
-import { AccountRole } from '@app/account-types/types/account-type.enum';
+import { UserResponse } from './responses/user-response';
+import { AccountRole } from '@app/account-types/types/account-role.enum';
 import { AccountTypesService } from '@app/account-types/account-types.service';
 import { UpdateRefreshTokenDto } from './dto/update-refresh-token.dto';
 import { ErrorMessages } from '@app/common/strings/error-messages';
@@ -100,7 +100,7 @@ export class UsersService {
     });
   }
 
-  async returnProfile(userId: string): Promise<UserResponseObject> {
+  async returnProfile(userId: string): Promise<UserResponse> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: { accountType: true },
@@ -117,7 +117,7 @@ export class UsersService {
       throw new NotFoundException(ErrorMessages.USER_NOT_FOUND);
     }
 
-    const response: UserResponseObject = {
+    const response: UserResponse = {
       email: user.email,
       displayName: user.displayName,
       avatarUrl: user.avatarUrl,

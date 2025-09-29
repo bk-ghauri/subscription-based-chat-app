@@ -1,16 +1,17 @@
 import { UsersService } from '@app/users/users.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Subscription } from './entities/subscription.entity';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { ErrorMessages } from '@app/common/strings/error-messages';
 import { StripeService } from './stripe.service';
-import { BadRequestException, Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import Stripe from 'stripe';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { SubscriptionStatus } from './types/subscription-status.enum';
-import { AccountRole } from '@app/account-types/types/account-type.enum';
+import { AccountRole } from '@app/account-types/types/account-role.enum';
 import { AccountTypesService } from '@app/account-types/account-types.service';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
+import { SuccessMessages } from '@app/common/strings/success-messages';
 
 export class SubscriptionsService {
   private readonly logger = new Logger(SubscriptionsService.name);
@@ -45,12 +46,12 @@ export class SubscriptionsService {
       return { success: true, message: 'Already subscribed' };
     }
 
-    // if (latestSubscription.status === SubscriptionStatus.PAST_DUE) {
-    //   // Redirect to billing portal
-    //   return this.stripeService.createBillingPortalSession(
-    //     latestSubscription.stripeCustomerId,
-    //   );
-    // }
+    if (latestSubscription.status === SubscriptionStatus.PAST_DUE) {
+      // Redirect to billing portal
+      return this.stripeService.createBillingPortalSession(
+        latestSubscription.stripeCustomerId,
+      );
+    }
 
     if (latestSubscription.status === SubscriptionStatus.CANCELED) {
       // Same customer, new subscription
@@ -70,11 +71,8 @@ export class SubscriptionsService {
     const existingSubscription =
       await this.findOneByStripeSubscriptionId(stripeSubscriptionId);
 
-    if (
-      existingSubscription
-      // && userSubscription.status !== SubscriptionStatus.CANCELED // Even if cancelled, can't create new subscription with same id
-    ) {
-      return { message: 'Subscription already exists' };
+    if (existingSubscription) {
+      return { message: SuccessMessages.SUBSCRIPTION_EXISTS };
     }
 
     // Stripe metadata: userId is set when you create the checkout session
@@ -95,12 +93,24 @@ export class SubscriptionsService {
     };
 
     return await this.insertOneIfNotExists(newSubscription);
+  }
 
-    // return await this.createSubscription(
-    //   userId,
-    //   stripeCustomerId,
-    //   stripeSubscriptionId,
-    // );
+  async createBillingPortalSession(userId: string) {
+    const subscription = await this.findOneByUserId(userId);
+    if (!subscription || !subscription.stripeCustomerId) {
+      return {
+        success: false,
+        message: ErrorMessages.NO_BILLING_PORTAL,
+      };
+    }
+
+    const url = await this.stripeService.createBillingPortalSession(
+      subscription.stripeCustomerId,
+    );
+    return {
+      success: true,
+      url,
+    };
   }
 
   async insertOneIfNotExists(dto: CreateSubscriptionDto) {
@@ -118,73 +128,11 @@ export class SubscriptionsService {
         this.logger.debug(
           `Subscription ${dto.stripeSubscriptionId} already exists, skipping insert.`,
         );
-        return { success: true, message: 'Subscription already exists' };
+        return { success: true, message: SuccessMessages.SUBSCRIPTION_EXISTS };
       }
       throw err;
     }
   }
-
-  // async createSubscription(
-  //   userId: string,
-  //   stripeCustomerId: string,
-  //   stripeSubscriptionId: string,
-  //   status: SubscriptionStatus = SubscriptionStatus.PAST_DUE, // Default until invoice.payment_succeeded webhook
-  //   currentPeriodEnd: Date | null = null, // Default null unless invoice.payment_succeeded webhook
-  // ) {
-  //   const user = await this.userService.findOne(userId);
-  //   if (!user) throw new Error('User not found');
-
-  //   const subscription: CreateSubscriptionDto = {
-  //     userId,
-  //     stripeCustomerId,
-  //     stripeSubscriptionId,
-  //     currentPeriodEnd,
-  //     status,
-  //   };
-
-  //   const savedSubscription = await this.subscriptionRepository.save(
-  //     this.subscriptionRepository.create({ ...subscription, user }),
-  //   );
-
-  //   return savedSubscription;
-  // }
-
-  // async activateSubscription(
-  //   userId: string,
-  //   stripeCustomerId: string,
-  //   stripeSubscriptionId: string,
-  //   currentPeriodEnd: Date,
-  // ) {
-  //   // Check if stripeCustomerId exists for user
-  //   const userSubscription = await this.findOneByUserId(userId);
-  //   if (!userSubscription) {
-  //     return await this.createSubscription(
-  //       userId,
-  //       stripeCustomerId,
-  //       stripeSubscriptionId,
-  //       SubscriptionStatus.ACTIVE,
-  //       currentPeriodEnd,
-  //     );
-  //   }
-
-  //   const updateDto: UpdateSubscriptionDto = {
-  //     status: SubscriptionStatus.ACTIVE,
-  //     currentPeriodEnd,
-  //   };
-
-  //   await this.subscriptionRepository.update(
-  //     { stripeSubscriptionId: stripeSubscriptionId },
-  //     updateDto,
-  //   );
-
-  //   await this.accountTypeService.updateOne({
-  //     userId,
-  //     role: AccountRole.PREMIUM,
-  //   });
-
-  //   this.logger.log(`Subscription ${stripeSubscriptionId} marked ACTIVE`);
-  //   return;
-  // }
 
   async handleInvoiceSucceeded(invoice: Stripe.Invoice) {
     this.logger.log(`Handling invoice.payment_succeeded: ${invoice.id}`);
@@ -197,11 +145,6 @@ export class SubscriptionsService {
       return;
     }
 
-    // const subscription = await this.findOneByStripeSubscriptionId(
-    //   stripeSubscriptionId as string,
-    // );
-
-    // if (!subscription) {
     const stripeCustomerId = invoice.customer as string;
     const userId = invoice.parent?.subscription_details?.metadata?.userId; // comes from checkout.session.subscription_data metadata
 
@@ -235,7 +178,7 @@ export class SubscriptionsService {
 
   async UpdateorInsertSubscription(dto: CreateSubscriptionDto) {
     const user = await this.userService.findOne(dto.userId);
-    if (!user) throw new Error('User not found');
+    if (!user) throw new Error(ErrorMessages.USER_NOT_FOUND);
 
     // Upsert on unique key: stripeSubscriptionId
     await this.subscriptionRepository.upsert(dto, {
@@ -258,7 +201,6 @@ export class SubscriptionsService {
       return;
     }
 
-    const stripeCustomerId = invoice.customer as string;
     const userId = invoice.parent?.subscription_details?.metadata?.userId; // comes from checkout.session.subscription_data metadata
 
     if (!userId) {
@@ -268,35 +210,17 @@ export class SubscriptionsService {
       return;
     }
 
-    const updatedSubscription = await this.UpdateorInsertSubscription({
-      userId,
-      stripeCustomerId,
-      stripeSubscriptionId,
-      status: SubscriptionStatus.ACTIVE, // Leave currentPeriodEnd as is for grace period
-    });
-    this.logger.log(`Subscription ${stripeSubscriptionId} marked PAST_DUE`);
-    return updatedSubscription;
+    // Wait for subscription.status.updated webhook to update subscription status, but revoke premium rights
+    await this.updateAccountType(userId, SubscriptionStatus.PAST_DUE);
 
-    // const subscription = await this.findOneByStripeSubscriptionId(
-    //   stripeSubscriptionId as string,
-    // );
-
-    // if (!subscription) {
-    //   this.logger.error('Subscription not found');
-    //   return;
-    // }
-
-    // const updateDto: UpdateSubscriptionDto = {
-    //   status: SubscriptionStatus.PAST_DUE,
-    // };
-
-    // await this.subscriptionRepository.update(
-    //   { stripeSubscriptionId: stripeSubscriptionId as string },
-    //   updateDto,
-    // );
+    return;
   }
 
   async handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+    this.logger.log(
+      `Handling customer.subscription.updated: ${subscription.id}`,
+    );
+
     const stripeSubscriptionId = subscription.id as string;
     const stripeCustomerId = subscription.customer as string;
     const userId = subscription.metadata.userId as string;
@@ -313,6 +237,7 @@ export class SubscriptionsService {
       incomplete_expired: SubscriptionStatus.CANCELED,
       trialing: SubscriptionStatus.ACTIVE,
       unpaid: SubscriptionStatus.PAST_DUE,
+      paused: SubscriptionStatus.PAST_DUE,
     };
 
     const status =
@@ -332,10 +257,14 @@ export class SubscriptionsService {
       `Subscription ${stripeSubscriptionId} updated -> ${status}, periodEnd: ${currentPeriodEnd}`,
     );
 
-    return { success: true };
+    return;
   }
 
   async handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+    this.logger.log(
+      `Handling customer.subscription.deleted: ${subscription.id}`,
+    );
+
     const stripeSubscriptionId = subscription.id as string;
     const userId = subscription.metadata.userId as string;
 
@@ -360,21 +289,8 @@ export class SubscriptionsService {
     this.logger.log(
       `Subscription ${stripeSubscriptionId} marked as CANCELED in DB.`,
     );
-    return { success: true };
+    return;
   }
-
-  // async findActiveSubscriptionByUserId(userId: string) {
-  //   return await this.subscriptionRepository.findOne({
-  //     where: {
-  //       user: { id: userId },
-  //       status: SubscriptionStatus.ACTIVE,
-  //     },
-  //     select: { id: true, stripeCustomerId: true },
-  //     relations: {
-  //       user: true,
-  //     },
-  //   });
-  // }
 
   private async updateAccountType(userId: string, status: SubscriptionStatus) {
     switch (status) {
@@ -388,7 +304,7 @@ export class SubscriptionsService {
       case SubscriptionStatus.PAST_DUE:
         await this.accountTypeService.updateOne({
           userId,
-          role: AccountRole.PREMIUM, // Keep access for grace period
+          role: AccountRole.FREE,
         });
         break;
 
@@ -406,10 +322,9 @@ export class SubscriptionsService {
   }
 
   private async confirmUserRole(userId: string) {
-    const activeOrPastDue: number =
-      await this.countActiveOrPastDueByUserId(userId);
+    const activeSubscriptions: number = await this.countActiveByUserId(userId);
     const newRole =
-      activeOrPastDue > 0 ? AccountRole.PREMIUM : AccountRole.FREE;
+      activeSubscriptions > 0 ? AccountRole.PREMIUM : AccountRole.FREE;
 
     return newRole;
   }
@@ -428,11 +343,11 @@ export class SubscriptionsService {
     });
   }
 
-  async countActiveOrPastDueByUserId(userId: string): Promise<number> {
+  async countActiveByUserId(userId: string): Promise<number> {
     return await this.subscriptionRepository.count({
       where: {
         user: { id: userId },
-        status: In([SubscriptionStatus.ACTIVE, SubscriptionStatus.PAST_DUE]),
+        status: SubscriptionStatus.ACTIVE,
       },
     });
   }
@@ -442,7 +357,7 @@ export class SubscriptionsService {
       where: {
         user: { id: userId },
       },
-      select: { id: true, stripeCustomerId: true },
+      select: { id: true, stripeCustomerId: true, stripeSubscriptionId: true },
       relations: {
         user: true,
       },

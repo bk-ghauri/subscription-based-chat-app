@@ -36,7 +36,7 @@ export class StripeService {
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: 'http://localhost:3000/subscriptions/success',
+      success_url: 'http://localhost:3000/subscriptions/success', // Placeholders to be replaced on front-end creation
       cancel_url: 'http://localhost:3000/subscriptions/cancel',
       metadata: { userId },
       subscription_data: {
@@ -58,7 +58,7 @@ export class StripeService {
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: 'http://localhost:3000/subscriptions/success',
+      success_url: 'http://localhost:3000/subscriptions/success', // Placeholders to be replaced on front-end creation
       cancel_url: 'http://localhost:3000/subscriptions/cancel',
       metadata: { userId },
       subscription_data: {
@@ -67,5 +67,14 @@ export class StripeService {
     });
 
     return { url: session.url };
+  }
+
+  async createBillingPortalSession(stripeCustomerId: string) {
+    const session = await this.client.billingPortal.sessions.create({
+      customer: stripeCustomerId,
+      // return_url: `${process.env.FRONTEND_URL}/dashboard`,
+    });
+
+    return session.url;
   }
 }
