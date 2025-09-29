@@ -1,5 +1,5 @@
 import { IsEnum, IsNotEmpty, IsUUID } from 'class-validator';
-import { AccountRole } from '../types/account-type.enum';
+import { AccountRole } from '../types/account-role.enum';
 
 export class CreateAccountTypeDto {
   @IsUUID()

@@ -6,7 +6,6 @@ import { AttachmentsService } from './attachments.service';
 import { AuthModule } from '@app/auth/auth.module';
 import { SignedUrlService } from './signed-url.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { AccountTypesModule } from '@app/account-types/account-types.module';
 import { MessageAttachmentsModule } from '@app/message-attachments/message-attachments.module';
 import { UsersModule } from '@app/users/users.module';
 import urlConfig from './config/url.config';
@@ -15,6 +14,7 @@ import { MEDIA_ATTACHMENTS_DIR } from '@app/common/constants';
 import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { AccountTypesModule } from '@app/account-types/account-types.module';
 
 @Module({
   imports: [
@@ -53,9 +53,9 @@ import { extname } from 'path';
       },
     }),
     AuthModule,
-    AccountTypesModule,
     MessageAttachmentsModule,
     UsersModule,
+    AccountTypesModule,
   ],
   controllers: [AttachmentsController],
   providers: [AttachmentsService, SignedUrlService],
