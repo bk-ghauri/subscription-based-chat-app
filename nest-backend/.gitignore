@@ -59,6 +59,3 @@ package-lock.json
 
 testGraceTimeout.js
 testAttachment.js
-
-src/account-types
-src/attachments

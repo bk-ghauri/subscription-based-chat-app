@@ -1,11 +1,4 @@
-import {
-  Entity,
-  PrimaryColumn,
-  Column,
-  OneToOne,
-  JoinColumn,
-  Unique,
-} from 'typeorm';
+import { Entity, Column, OneToOne, JoinColumn, Unique } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { AccountRole } from '../types/account-role.enum';
 import { IsEnum } from 'class-validator';
