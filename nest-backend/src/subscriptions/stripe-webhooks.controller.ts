@@ -9,7 +9,7 @@ import {
 import type { Response } from 'express';
 import { StripeService } from './stripe.service';
 import Stripe from 'stripe';
-import { SubscriptionsService } from './subscriptions.service';
+import { SubscriptionsService } from './stripe-webhooks.service';
 import { RawBody } from './decorators/raw-body.decorator';
 import { StripeWebhooksService } from './stripe-webhooks.service';
 
