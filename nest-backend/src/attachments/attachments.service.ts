@@ -29,43 +29,44 @@ export class AttachmentsService {
     private readonly userService: UsersService,
   ) {}
 
-  async create(file: Express.Multer.File, userId: string) {
-    const fileUrl = path.join(MEDIA_ATTACHMENTS_DIR, file.filename);
+  async createMany(files: Express.Multer.File[], userId: string) {
+    const savedAttachments: AttachmentResponse[] = [];
 
-    // Save metadata to DB
+    for (const file of files) {
+      const fileUrl = path.join(MEDIA_ATTACHMENTS_DIR, file.filename);
 
-    const dto: CreateAttachmentDto = {
-      fileUrl,
-      fileType: file.mimetype,
-      size: file.size,
-      uploaderId: userId,
-    };
+      // Save metadata to DB
 
-    const user = await this.userService.findOne(userId);
-
-    const attachment = this.attachmentRepository.create({
-      ...dto,
-      uploader: { id: dto.uploaderId },
-    });
-
-    try {
-      const saved = await this.attachmentRepository.save(attachment);
-
-      const response: AttachmentResponse = {
-        id: saved.id,
-        fileUrl: saved.fileUrl,
-        fileType: saved.fileType,
-        size: saved.size,
-        createdAt: saved.createdAt,
+      const dto: CreateAttachmentDto = {
+        fileUrl,
+        fileType: file.mimetype,
+        size: file.size,
+        uploaderId: userId,
       };
 
-      return response;
-    } catch (err) {
-      // Cleanup file if DB save fails
-      await fs.unlink(file.path).catch(() => {});
-      throw new InternalServerErrorException(
-        ErrorMessages.ATTACHMENT_NOT_SAVED,
-      );
+      const attachment = this.attachmentRepository.create({
+        ...dto,
+        uploader: { id: dto.uploaderId },
+      });
+
+      try {
+        const saved = await this.attachmentRepository.save(attachment);
+
+        savedAttachments.push({
+          id: saved.id,
+          fileUrl: saved.fileUrl,
+          fileType: saved.fileType,
+          size: saved.size,
+          createdAt: saved.createdAt,
+        });
+      } catch (err) {
+        // Cleanup file if DB save fails
+        await fs.unlink(file.path).catch(() => {});
+        throw new InternalServerErrorException(
+          ErrorMessages.ATTACHMENT_NOT_SAVED,
+        );
+      }
+      return savedAttachments;
     }
   }
 
