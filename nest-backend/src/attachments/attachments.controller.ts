@@ -64,6 +64,11 @@ export class AttachmentsController {
     if (!files || !files.length) {
       throw new BadRequestException(ErrorMessages.NO_FILE_ATTACHED);
     }
+    console.log(
+      'Received files:',
+      files.map((f) => f.originalname),
+    );
+
     // service will save metadata but leave message=null for now
     return this.attachmentService.createMany(files, userId);
   }
