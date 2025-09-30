@@ -28,4 +28,5 @@ export const ErrorMessages = {
   ATTACHMENT_NOT_SAVED: 'Could not save attachment',
   INVALID_LINK: 'Invalid or expired link',
   NO_BILLING_PORTAL: 'No billing portal available. Please subscribe first.',
+  NOT_ADMIN: 'Only ADMIN can access this feature',
 };

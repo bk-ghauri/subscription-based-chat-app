@@ -1,8 +1,8 @@
 import { Entity, Column, OneToOne, JoinColumn, PrimaryColumn } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
-import { IsDate, IsString, IsNotEmpty, Length } from 'class-validator';
-import { BaseEntity } from './base.entity';
-import { MaxTextLength } from '../validators/max-text-length';
+import { IsString, IsNotEmpty } from 'class-validator';
+import { BaseEntity } from '@app/common/entities/base.entity';
+import { MaxTextLength } from '@app/common/validators/max-text-length';
 
 @Entity('suspendeds')
 export class Suspended extends BaseEntity {

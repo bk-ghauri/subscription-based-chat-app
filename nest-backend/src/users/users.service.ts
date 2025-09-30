@@ -46,7 +46,25 @@ export class UsersService {
   }
 
   async findAll() {
-    return this.userRepository.find();
+    return await this.userRepository.find();
+  }
+
+  async findAllWithSubscriptionStatus() {
+    return await this.userRepository.find({
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+        avatarUrl: true,
+        accountType: { role: true },
+        subscriptions: {
+          stripeCustomerId: true,
+          stripeSubscriptionId: true,
+          status: true,
+        },
+      },
+      relations: { subscriptions: true, accountType: true },
+    });
   }
 
   async findByEmail(email: string) {

@@ -25,6 +25,8 @@ import { MessageStatus } from './message-status/entities/message-status.entity';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { MessageAttachmentsModule } from './message-attachments/message-attachments.module';
 import { MessageAttachment } from './message-attachments/entities/message-attachment.entity';
+import { AdminModule } from './admin/admin.module';
+import { SuspendedModule } from './suspended/suspended.module';
 
 @Module({
   imports: [
@@ -67,6 +69,8 @@ import { MessageAttachment } from './message-attachments/entities/message-attach
     MessageStatusModule,
     AccountTypesModule,
     MessageAttachmentsModule,
+    AdminModule,
+    SuspendedModule,
   ],
   controllers: [AppController],
   providers: [AppService],
