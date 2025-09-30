@@ -1,6 +1,6 @@
 import { JwtAuthGuard } from '@app/auth/utils/Guards';
 import { Controller, Get, Post, UseGuards } from '@nestjs/common';
-import { SubscriptionsService } from './subscriptions.service';
+import { SubscriptionsService } from './stripe-webhooks.service';
 import { UserId } from '@app/common/decorators/user-id.decorator';
 import { Public } from '@app/auth/decorators/public.decorator';
 import {
