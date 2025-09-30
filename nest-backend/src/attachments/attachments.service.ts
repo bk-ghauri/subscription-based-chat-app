@@ -66,8 +66,8 @@ export class AttachmentsService {
           ErrorMessages.ATTACHMENT_NOT_SAVED,
         );
       }
-      return savedAttachments;
     }
+    return savedAttachments;
   }
 
   async getSignedUrl(attachmentId: string, userId: string) {
