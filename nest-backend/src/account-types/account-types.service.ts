@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AccountType } from './entities/account-type.entity';
 import { Repository } from 'typeorm';
-import { AccountRole } from './types/account-type.enum';
+import { AccountRole } from './types/account-role.enum';
 
 @Injectable()
 export class AccountTypesService {

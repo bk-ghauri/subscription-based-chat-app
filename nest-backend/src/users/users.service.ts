@@ -5,7 +5,7 @@ import { In, Repository } from 'typeorm';
 import { User } from '@app/users/entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseObject } from './responses/user-response';
-import { AccountRole } from '@app/account-types/types/account-type.enum';
+import { AccountRole } from '@app/account-types/types/account-role.enum';
 import { AccountTypesService } from '@app/account-types/account-types.service';
 import { UpdateRefreshTokenDto } from './dto/update-refresh-token.dto';
 import { ErrorMessages } from '@app/common/strings/error-messages';

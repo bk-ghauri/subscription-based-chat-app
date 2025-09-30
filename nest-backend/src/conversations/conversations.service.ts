@@ -17,7 +17,7 @@ import { UsersService } from '@app/users/users.service';
 import { ConversationTypeEnum } from './types/conversation.enum';
 import { ConversationResponse } from './responses/conversation-response';
 import { ConversationRole } from '@app/conversation-members/types/conversation-member.enum';
-import { AccountRole } from '@app/account-types/types/account-type.enum';
+import { AccountRole } from '@app/account-types/types/account-role.enum';
 import { ConversationCreatorResponse } from './responses/conversation-creator-response';
 import { AddMembersDto } from './dto/add-members.dto';
 import { AccountTypesService } from '@app/account-types/account-types.service';

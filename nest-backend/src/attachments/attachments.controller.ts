@@ -7,11 +7,11 @@ import {
   Post,
   Query,
   Res,
-  UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { AttachmentsService } from './attachments.service';
 import express from 'express';
 import { Public } from '@app/auth/decorators/public.decorator';
@@ -20,6 +20,7 @@ import { UploadSizeGuard } from '../account-types/guards/upload-size.guard';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiBody,
   ApiConsumes,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
@@ -36,24 +37,35 @@ export class AttachmentsController {
 
   @Post()
   @UseGuards(UploadSizeGuard)
-  @UseInterceptors(FileInterceptor('file'))
-  @ApiOperation({ summary: 'Upload an attachment file' })
+  @UseInterceptors(FilesInterceptor('files', 10))
+  @ApiOperation({ summary: 'Upload attachment files' })
   @ApiConsumes('multipart/form-data')
-  @ApiOkResponse({ description: 'File uploaded successfully' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        files: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+        },
+      },
+    },
+  })
+  @ApiOkResponse({ description: 'Files uploaded successfully' })
   @ApiBadRequestResponse({
-    description: 'No file attached or file exceeds size limits',
+    description: 'No file attached or a file exceeds size limits',
   })
   @ApiUnauthorizedResponse()
   @ApiBearerAuth()
-  async uploadAttachment(
-    @UploadedFile() file: Express.Multer.File,
+  async uploadAttachments(
+    @UploadedFiles() files: Express.Multer.File[],
     @UserId() userId: string,
   ) {
-    if (!file) {
+    if (!files || !files.length) {
       throw new BadRequestException(ErrorMessages.NO_FILE_ATTACHED);
     }
     // service will save metadata but leave message=null for now
-    return this.attachmentService.create(file, userId);
+    return this.attachmentService.createMany(files, userId);
   }
 
   @Get(':id/signed-url')
