@@ -3,7 +3,6 @@ export const ErrorMessages = {
   DISPLAY_NAME_TAKEN: 'This name is already taken',
   USER_NOT_FOUND: 'User not found!',
   ACCOUNT_TYPE_NOT_FOUND: 'Account type not found',
-  ACCOUNT_TYPE_NOT_FOUND: 'Account type not found',
   MESSAGE_NOT_FOUND: 'Message not found',
   ATTACHMENT_NOT_FOUND: 'Attachment not found',
   MESSAGE_ATTACHMENT_NOT_FOUND: 'Message attachment not found',
@@ -25,7 +24,6 @@ export const ErrorMessages = {
   INVALID_CONNECTION_ERROR: 'Invalid client connection:',
   FILE_TOO_LARGE: (limit: number) =>
     `File exceeds your plan limit of ${limit} MB`,
-  NO_FILE_ATTACHED: 'No file attached',
   NO_FILE_ATTACHED: 'No file attached',
   ATTACHMENT_NOT_SAVED: 'Could not save attachment',
   INVALID_LINK: 'Invalid or expired link',
