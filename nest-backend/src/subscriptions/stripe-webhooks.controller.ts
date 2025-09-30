@@ -11,6 +11,7 @@ import { StripeService } from './stripe.service';
 import Stripe from 'stripe';
 import { SubscriptionsService } from './subscriptions.service';
 import { RawBody } from './decorators/raw-body.decorator';
+import { StripeWebhooksService } from './stripe-webhooks.service';
 
 @Controller('webhooks/stripe')
 export class StripeWebhooksController {
@@ -18,7 +19,7 @@ export class StripeWebhooksController {
 
   constructor(
     private readonly stripeService: StripeService,
-    private readonly subscriptionsService: SubscriptionsService,
+    private readonly stripeWebhooksService: StripeWebhooksService,
   ) {}
 
   @Post()
@@ -52,31 +53,31 @@ export class StripeWebhooksController {
     try {
       switch (event.type) {
         case 'checkout.session.completed':
-          await this.subscriptionsService.handleCheckoutCompleted(
+          await this.stripeWebhooksService.handleCheckoutCompleted(
             event.data.object as Stripe.Checkout.Session,
           );
           break;
 
         case 'invoice.payment_succeeded':
-          await this.subscriptionsService.handleInvoiceSucceeded(
+          await this.stripeWebhooksService.handleInvoiceSucceeded(
             event.data.object as Stripe.Invoice,
           );
           break;
 
         case 'invoice.payment_failed':
-          await this.subscriptionsService.handleInvoiceFailed(
+          await this.stripeWebhooksService.handleInvoiceFailed(
             event.data.object as Stripe.Invoice,
           );
           break;
 
         case 'customer.subscription.updated':
-          await this.subscriptionsService.handleSubscriptionUpdated(
+          await this.stripeWebhooksService.handleSubscriptionUpdated(
             event.data.object as Stripe.Subscription,
           );
           break;
 
         case 'customer.subscription.deleted':
-          await this.subscriptionsService.handleSubscriptionDeleted(
+          await this.stripeWebhooksService.handleSubscriptionDeleted(
             event.data.object as Stripe.Subscription,
           );
           break;

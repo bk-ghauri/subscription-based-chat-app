@@ -8,18 +8,19 @@ import {
   ApiCreatedResponse,
   ApiOperation,
 } from '@nestjs/swagger';
+import { StripeWebhooksService } from './stripe-webhooks.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('subscriptions')
 export class SubscriptionsController {
-  constructor(private readonly subscriptionService: SubscriptionsService) {}
+  constructor(private readonly stripeWebhooksService: StripeWebhooksService) {}
 
   @Post('checkout')
   @ApiOperation({ summary: 'Create a Stripe checkout session' })
   @ApiCreatedResponse({ description: 'Checkout session created' })
   @ApiBearerAuth()
   async createCheckout(@UserId() userId: string) {
-    return this.subscriptionService.createCheckoutSession(userId);
+    return this.stripeWebhooksService.createCheckoutSession(userId);
   }
 
   @Post('billing-portal')
@@ -27,7 +28,7 @@ export class SubscriptionsController {
   @ApiCreatedResponse({ description: 'Billing portal session created' })
   @ApiBearerAuth()
   async createBillingPortal(@UserId() userId: string) {
-    return await this.subscriptionService.createBillingPortalSession(userId);
+    return await this.stripeWebhooksService.createBillingPortalSession(userId);
   }
 
   // Placeholder endpoints (to be replaced on front-end creation)

@@ -9,6 +9,7 @@ import { UsersModule } from '@app/users/users.module';
 import { SubscriptionsController } from './subscriptions.controller';
 import { StripeWebhooksController } from './stripe-webhooks.controller';
 import { AccountTypesModule } from '@app/account-types/account-types.module';
+import { StripeWebhooksService } from './stripe-webhooks.service';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { AccountTypesModule } from '@app/account-types/account-types.module';
     UsersModule,
     AccountTypesModule,
   ],
-  providers: [SubscriptionsService, StripeService],
+  providers: [SubscriptionsService, StripeService, StripeWebhooksService],
   controllers: [SubscriptionsController, StripeWebhooksController],
 })
 export class SubscriptionsModule {}
