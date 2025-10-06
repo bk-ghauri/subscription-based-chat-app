@@ -7,7 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { AttachmentsModule } from './attachments/attachments.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { AccountType } from '@app/account-types/entities/account-type.entity';
-import { Suspended } from './common/entities/suspended.entity';
+import { Suspended } from './suspended/entities/suspended.entity';
 import { Conversation } from '@app/conversations/entities/conversation.entity';
 import { ConversationMember } from '@app/conversation-members/entities/conversation-member.entity';
 import { Attachment } from './attachments/entities/attachment.entity';

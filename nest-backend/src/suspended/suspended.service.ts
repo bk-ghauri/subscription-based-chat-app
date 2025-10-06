@@ -3,6 +3,7 @@ import { CreateSuspendedDto } from './dto/create-suspended.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Suspended } from './entities/suspended.entity';
 import { Repository } from 'typeorm';
+import { SuccessMessages } from '@app/common/strings/success-messages';
 
 @Injectable()
 export class SuspendedService {
@@ -18,8 +19,10 @@ export class SuspendedService {
   }
 
   async removeOne(userId: string) {
-    await this.suspendedRepository.softDelete(userId);
-    return { success: true, message: `User ${userId} has been unbanned` };
+    const result = await this.suspendedRepository.softDelete({ userId });
+    if (result.affected) {
+      return { success: true, message: SuccessMessages.USER_UNBANNED };
+    }
   }
 
   async findAll() {
@@ -32,9 +35,6 @@ export class SuspendedService {
       withDeleted: false,
     });
 
-    if (!suspended) {
-      return { message: 'This user is not suspended' };
-    }
     return suspended;
   }
 
@@ -46,7 +46,7 @@ export class SuspendedService {
     });
 
     if (!suspendeds) {
-      return { message: 'This user was never banned' };
+      return { message: SuccessMessages.USER_NEVER_BANNED };
     }
     return suspendeds;
   }

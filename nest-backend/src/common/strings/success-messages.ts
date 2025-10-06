@@ -6,4 +6,7 @@ export const SuccessMessages = {
   MESSAGE_ATTACHMENT_DELETED: 'Message attachment has been soft-deleted',
   USER_DELETED: 'User has been deleted',
   SUBSCRIPTION_EXISTS: 'Subscription already exists',
+  USER_ALREADY_SUSPENDED: 'This user is already suspended',
+  USER_NEVER_BANNED: 'This user was never banned',
+  USER_UNBANNED: 'User has been unbanned',
 };

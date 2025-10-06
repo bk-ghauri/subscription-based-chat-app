@@ -1,3 +1,4 @@
+import { SuccessMessages } from '@app/common/strings/success-messages';
 import { MessagesService } from '@app/messages/messages.service';
 import { CreateSuspendedDto } from '@app/suspended/dto/create-suspended.dto';
 import { SuspendedService } from '@app/suspended/suspended.service';
@@ -17,13 +18,16 @@ export class AdminService {
   }
 
   async suspendUser(dto: CreateSuspendedDto) {
-    const existingSuspension = this.suspendedService.findOneByUserId(
+    const existingSuspension = await this.suspendedService.findOneByUserId(
       dto.userId,
     );
-    if (!existingSuspension) {
-      return await this.suspendedService.createOne(dto);
+    if (existingSuspension) {
+      return {
+        message: SuccessMessages.USER_ALREADY_SUSPENDED,
+        existingSuspension,
+      };
     }
-    return { message: 'This user is already suspended' };
+    return await this.suspendedService.createOne(dto);
   }
 
   async unsuspendUser(userId: string) {
@@ -40,5 +44,7 @@ export class AdminService {
     return { isSuspended, suspended };
   }
 
-  async removeMessage(messageId: string) {}
+  async removeMessage(messageId: string) {
+    return await this.messageService.softDelete(messageId);
+  }
 }
