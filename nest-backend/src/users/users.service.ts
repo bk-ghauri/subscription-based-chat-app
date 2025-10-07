@@ -37,8 +37,23 @@ export class UsersService {
     return user;
   }
 
+  async update(userId: string, updateUserDto: UpdateUserDto) {
+    const result = await this.userRepository.update(
+      { id: userId },
+      { ...updateUserDto },
+    );
+
+    if (!result.affected) {
+      return { message: ErrorMessages.USER_NOT_FOUND };
+    }
+
+    return {
+      message: SuccessMessages.PROFILE_UPDATED,
+    };
+  }
+
   async remove(userId: string) {
-    const result = await this.userRepository.delete({ id: userId });
+    const result = await this.userRepository.softDelete({ id: userId });
     if (result.affected === 0) {
       throw new NotFoundException(ErrorMessages.USER_NOT_FOUND);
     }

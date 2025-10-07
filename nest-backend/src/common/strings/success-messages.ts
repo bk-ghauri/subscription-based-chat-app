@@ -9,4 +9,5 @@ export const SuccessMessages = {
   USER_ALREADY_SUSPENDED: 'This user is already suspended',
   USER_NEVER_BANNED: 'This user was never banned',
   USER_UNBANNED: 'User has been unbanned',
+  PROFILE_UPDATED: 'Profile has been updated',
 };

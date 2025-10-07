@@ -12,9 +12,8 @@ import urlConfig from './config/url.config';
 import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
 import { MEDIA_ATTACHMENTS_DIR } from '@app/common/constants';
 import { MulterModule } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
 import { AccountTypesModule } from '@app/account-types/account-types.module';
+import { createMulterConfig } from '@app/common/utils/multer.config';
 
 @Module({
   imports: [
@@ -25,33 +24,18 @@ import { AccountTypesModule } from '@app/account-types/account-types.module';
       useFactory: (config: ConfigService) =>
         config.get<JwtModuleOptions>('url')!,
     }),
-
-    MulterModule.register({
-      storage: diskStorage({
-        destination: MEDIA_ATTACHMENTS_DIR,
-        filename: (req, file, cb) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname); // preserves .png, .jpg, etc.
-          cb(null, `${uniqueSuffix}${ext}`);
-        },
-      }),
-      limits: {
-        fileSize: 50 * 1024 * 1024, // 50MB max
-      },
-      fileFilter: (req, file, cb) => {
-        const allowedTypes = [
+    MulterModule.register(
+      createMulterConfig(
+        MEDIA_ATTACHMENTS_DIR,
+        [
           'image/jpeg',
           'image/png',
           'application/pdf',
           'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        ];
-        if (!allowedTypes.includes(file.mimetype)) {
-          return cb(new Error('Unsupported file type'), false);
-        }
-        cb(null, true);
-      },
-    }),
+        ],
+        50,
+      ),
+    ),
     AuthModule,
     MessageAttachmentsModule,
     UsersModule,
