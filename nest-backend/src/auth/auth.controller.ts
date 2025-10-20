@@ -12,7 +12,7 @@ import {
   ApiOperation,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { LoginResponseObject } from './dto/login-response';
+import { LoginResponse } from './responses/login-response';
 import { LoginDto } from './dto/login.dto';
 import { UserId } from '@app/common/decorators/user-id.decorator';
 
@@ -35,7 +35,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Login with username and password' })
   @ApiBody({ type: LoginDto })
   @ApiOkResponse({
-    type: LoginResponseObject,
+    type: LoginResponse,
     description: 'User logged in successfully',
   })
   @ApiUnauthorizedResponse({
@@ -52,7 +52,7 @@ export class AuthController {
   })
   @ApiOkResponse({
     description: 'New refresh token generated',
-    type: LoginResponseObject,
+    type: LoginResponse,
   })
   @ApiBearerAuth()
   @ApiUnauthorizedResponse({ description: 'Invalid refresh token' })
