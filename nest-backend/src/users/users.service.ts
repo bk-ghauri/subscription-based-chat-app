@@ -4,51 +4,86 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { User } from '@app/users/entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { AccountType } from '@app/account-types/entities/account-type.entity';
-import { UserResponseObject } from './responses/user-response';
-import { AccountRole } from '@app/account-types/types/account-type.enum';
+import { UserResponse } from './responses/user-response';
+import { AccountRole } from '@app/account-types/types/account-role.enum';
 import { AccountTypesService } from '@app/account-types/account-types.service';
 import { UpdateRefreshTokenDto } from './dto/update-refresh-token.dto';
-import { ErrorMessages } from '@app/common/constants/error-messages';
-import { SuccessMessages } from '@app/common/constants/success-messages';
+import { ErrorMessages } from '@app/common/strings/error-messages';
+import { SuccessMessages } from '@app/common/strings/success-messages';
 
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectRepository(User) private UserRepository: Repository<User>,
+    @InjectRepository(User) private userRepository: Repository<User>,
 
     private readonly accountTypeService: AccountTypesService,
   ) {}
 
   async updateHashedRefreshToken(dto: UpdateRefreshTokenDto) {
-    return await this.UserRepository.update(
+    return await this.userRepository.update(
       { id: dto.userId },
       { hashedRefreshToken: dto.hashedRefreshToken },
     );
   }
 
   async create(createUserDto: CreateUserDto) {
-    const user = await this.UserRepository.save(
-      this.UserRepository.create(createUserDto),
+    const user = await this.userRepository.save(
+      this.userRepository.create(createUserDto),
     );
-    await this.accountTypeService.saveOne(user.id, AccountRole.FREE);
+    await this.accountTypeService.saveOne({
+      userId: user.id,
+      role: AccountRole.FREE,
+    });
     return user;
   }
 
-  async remove(userId: string) {
-    const result = await this.UserRepository.delete({ id: userId });
-    if (result.affected === 0) {
-      throw new NotFoundException(ErrorMessages.userNotFound);
+  async update(userId: string, updateUserDto: UpdateUserDto) {
+    const result = await this.userRepository.update(
+      { id: userId },
+      { ...updateUserDto },
+    );
+
+    if (!result.affected) {
+      return { message: ErrorMessages.USER_NOT_FOUND };
     }
-    return { message: SuccessMessages.userDeleted };
+
+    return {
+      message: SuccessMessages.PROFILE_UPDATED,
+    };
+  }
+
+  async remove(userId: string) {
+    const result = await this.userRepository.softDelete({ id: userId });
+    if (result.affected === 0) {
+      throw new NotFoundException(ErrorMessages.USER_NOT_FOUND);
+    }
+    return { message: SuccessMessages.USER_DELETED };
   }
 
   async findAll() {
-    return this.UserRepository.find();
+    return await this.userRepository.find();
+  }
+
+  async findAllWithSubscriptionStatus() {
+    return await this.userRepository.find({
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+        avatarUrl: true,
+        accountType: { role: true },
+        subscriptions: {
+          stripeCustomerId: true,
+          stripeSubscriptionId: true,
+          status: true,
+        },
+      },
+      relations: { subscriptions: true, accountType: true },
+    });
   }
 
   async findByEmail(email: string) {
-    return await this.UserRepository.findOne({
+    return await this.userRepository.findOne({
       where: {
         email,
       },
@@ -56,7 +91,7 @@ export class UsersService {
   }
 
   async findByEmailWithPassword(email: string) {
-    return await this.UserRepository.findOne({
+    return await this.userRepository.findOne({
       where: {
         email,
       },
@@ -65,17 +100,27 @@ export class UsersService {
   }
 
   async findByDisplayName(displayName: string) {
-    return await this.UserRepository.findOne({
+    return await this.userRepository.findOne({
       where: { displayName },
     });
   }
 
   async findUsersByIds(userIds: string[]) {
-    return this.UserRepository.findBy({ id: In(userIds) });
+    return this.userRepository.findBy({ id: In(userIds) });
+  }
+
+  async findOneWithRefreshToken(userId: string) {
+    return this.userRepository.findOne({
+      where: { id: userId },
+      select: {
+        id: true,
+        hashedRefreshToken: true,
+      },
+    });
   }
 
   async findOne(userId: string) {
-    return this.UserRepository.findOne({
+    return this.userRepository.findOne({
       where: { id: userId },
       select: {
         id: true,
@@ -83,14 +128,13 @@ export class UsersService {
         displayName: true,
         avatarUrl: true,
         createdAt: true,
-        accountType: true,
-        hashedRefreshToken: true,
       },
+      relations: { accountType: true },
     });
   }
 
-  async returnProfile(userId: string): Promise<UserResponseObject> {
-    const user = await this.UserRepository.findOne({
+  async returnProfile(userId: string): Promise<UserResponse> {
+    const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: { accountType: true },
       select: {
@@ -103,10 +147,10 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException(ErrorMessages.userNotFound);
+      throw new NotFoundException(ErrorMessages.USER_NOT_FOUND);
     }
 
-    const response: UserResponseObject = {
+    const response: UserResponse = {
       email: user.email,
       displayName: user.displayName,
       avatarUrl: user.avatarUrl,

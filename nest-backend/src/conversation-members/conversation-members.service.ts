@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ConversationMember } from './entities/conversation-member.entity';
 import { Repository } from 'typeorm';
-import { ErrorMessages } from '@app/common/constants/error-messages';
+import { ErrorMessages } from '@app/common/strings/error-messages';
 
 @Injectable()
 export class ConversationMembersService {
@@ -51,7 +51,7 @@ export class ConversationMembersService {
       userId,
     });
     if (!member) {
-      throw new NotFoundException(ErrorMessages.conversationMemberNotFound);
+      throw new NotFoundException(ErrorMessages.CONVERSATION_MEMBER_NOT_FOUND);
     }
     await this.conversationMemberRepository.remove(member);
   }

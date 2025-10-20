@@ -13,14 +13,11 @@ import { Server, Socket } from 'socket.io';
 //import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '@app/users/users.service';
 import { ConversationsService } from '@app/conversations/conversations.service';
-import { Inject, Logger } from '@nestjs/common';
-import jwtConfig from '@app/auth/config/jwt.config';
-import * as config from '@nestjs/config';
-import * as jwt from 'jsonwebtoken';
+import { Logger } from '@nestjs/common';
 import { MessageStatusService } from '@app/message-status/message-status.service';
 import { MessageStatusEnum } from '@app/message-status/types/message-status.enum';
 import { ConversationTypeEnum } from '@app/conversations/types/conversation.enum';
-import { ErrorMessages } from '@app/common/constants/error-messages';
+import { ErrorMessages } from '@app/common/strings/error-messages';
 import { TokenService } from '@app/auth/token.service';
 
 @WebSocketGateway({ cors: { origin: '*' } })
@@ -55,7 +52,7 @@ export class MessagesGateway
 
       if (!user) {
         client.disconnect();
-        return { success: false, message: ErrorMessages.unauthorized };
+        return { success: false, message: ErrorMessages.UNAUTHORIZED };
       }
 
       (client as any).user = {
@@ -84,7 +81,7 @@ export class MessagesGateway
 
       client.emit('authenticated', { success: true });
     } catch (err) {
-      this.logger.error(ErrorMessages.invalidConnectionError, err.message);
+      this.logger.error(ErrorMessages.INVALID_CONNECTION_ERROR, err.message);
       client.disconnect();
     }
   }
@@ -132,7 +129,7 @@ export class MessagesGateway
     const user = (client as any).user;
 
     if (!user) {
-      return { success: false, message: ErrorMessages.unauthorized };
+      return { success: false, message: ErrorMessages.UNAUTHORIZED };
     }
 
     //verify if user is part of the conversation
@@ -160,13 +157,10 @@ export class MessagesGateway
   ) {
     const user = (client as any).user;
     if (!user) {
-      return { success: false, message: ErrorMessages.unauthorized };
+      return { success: false, message: ErrorMessages.UNAUTHORIZED };
     }
 
-    const message = await this.messagesService.create({
-      ...dto,
-      senderId: user.id,
-    });
+    const message = await this.messagesService.create(dto);
 
     // Emit to recipients via receiveMessage
     this.server.in(dto.conversationId).emit('receiveMessage', message);
@@ -256,9 +250,9 @@ export class MessagesGateway
     @MessageBody() data: { messageId: string; conversationId: string },
     @ConnectedSocket() client: Socket,
   ) {
-    await this.messageService.remove(data.messageId);
+    await this.messageService.softDelete(data.messageId);
 
-    this.server.in(data.conversationId).emit('messageDeleted', {
+    this.server.in(data.conversationId).emit('MESSAGE_DELETED', {
       messageId: data.messageId,
     });
   }

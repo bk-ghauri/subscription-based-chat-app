@@ -1,9 +1,10 @@
-import { Entity, PrimaryColumn, Column, OneToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, OneToOne, JoinColumn, Unique } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
-import { AccountRole } from '../types/account-type.enum';
+import { AccountRole } from '../types/account-role.enum';
 import { IsEnum } from 'class-validator';
 import { BaseEntity } from '@app/common/entities/base.entity';
 
+@Unique(['userId'])
 @Entity('account_types')
 export class AccountType extends BaseEntity {
   @Column({ type: 'uuid', name: 'user_id' })

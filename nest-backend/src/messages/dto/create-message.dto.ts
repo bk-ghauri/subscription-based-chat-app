@@ -1,5 +1,5 @@
 import { MaxTextLength } from '@app/common/validators/max-text-length';
-import { IsString, IsUUID } from 'class-validator';
+import { IsArray, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreateMessageDto {
   @IsString()
@@ -11,4 +11,9 @@ export class CreateMessageDto {
 
   @IsUUID()
   conversationId: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  attachmentIds?: string[];
 }

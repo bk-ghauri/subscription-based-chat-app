@@ -1,6 +1,5 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
   Column,
   OneToMany,
   Unique,
@@ -11,14 +10,12 @@ import {
 import { Message } from '@app/messages/entities/message.entity';
 import { Subscription } from '../../subscriptions/entities/subscription.entity';
 import { AccountType } from '@app/account-types/entities/account-type.entity';
-import { Suspended } from '../../common/entities/suspended.entity';
+import { Suspended } from '@app/suspended/entities/suspended.entity';
 import { Attachment } from '../../attachments/entities/attachment.entity';
 import { ConversationMember } from '@app/conversation-members/entities/conversation-member.entity';
-
 import * as bcrypt from 'bcrypt';
 import { MessageStatus } from '@app/message-status/entities/message-status.entity';
 import {
-  IsDate,
   IsEmail,
   IsNotEmpty,
   IsOptional,
@@ -67,7 +64,7 @@ export class User extends BaseEntity {
   @OneToMany(() => Message, (msg) => msg.sender)
   messages: Message[];
 
-  @OneToMany(() => Attachment, (file) => file.uploaderId)
+  @OneToMany(() => Attachment, (file) => file.uploader)
   attachments: Attachment[];
 
   @OneToMany(() => ConversationMember, (cm) => cm.user)

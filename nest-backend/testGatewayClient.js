@@ -6,9 +6,9 @@ const SERVER_URL = 'http://localhost:3000';
 
 // Insert the JWT you got from your REST login
 const TOKEN =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI5YmNmOTcwOC05MmJkLTQxMmYtYmIzMi1iYTIxMTY3ZjBiNTciLCJpYXQiOjE3NTgyNjM5NTMsImV4cCI6MTc1ODI3NDc1M30.Yg32kNeKqmA1GhCRLJw8gmnYbgmMP7VEb4SwGkYExDU';
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI0NjA5ZTM3Yy1iODE4LTQ0NWMtYjY1NS0yNjIzMWFlMGYwZGMiLCJpYXQiOjE3NTg1MzU4NDQsImV4cCI6MTc1ODU0NjY0NH0.ToTnOKw-Rca9CiiEApk2CSbYVavA_KKyLt3FptBQhq4'; // JWT from login
 // Conversation you already created via REST
-const CONVERSATION_ID = 'b28fc307-ae81-4208-a0fc-5f5d16c29041';
+const CONVERSATION_ID = '15ce0bd5-9f47-42e7-8b46-d6c27caa9bea';
 
 /**
  * 1. Initialize socket.io client
@@ -110,7 +110,7 @@ socket.on('messageReadByAll', (data) => {
   console.log('👀 Message read by all:', data);
 });
 
-socket.on('messageDeleted', (data) => {
+socket.on('MESSAGE_DELETED', (data) => {
   console.log('🗑️ Message deleted:', data);
 });
 

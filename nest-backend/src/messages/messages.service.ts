@@ -1,16 +1,23 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { Message } from './entities/message.entity';
 import { Repository } from 'typeorm';
 import { UsersService } from '@app/users/users.service';
 import { ConversationsService } from '@app/conversations/conversations.service';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MessageResponseObject } from './responses/message-response';
+import { MessageResponse } from './responses/message-response';
 import { MessageSenderResponse } from './responses/message-sender-response';
 import { MessageAttachmentResponse } from '@app/attachments/responses/message-attachment-response';
 import { MessageStatusResponse } from '@app/message-status/responses/message-status-response';
-import { ErrorMessages } from '@app/common/constants/error-messages';
-import { SuccessMessages } from '@app/common/constants/success-messages';
+import { ErrorMessages } from '@app/common/strings/error-messages';
+import { SuccessMessages } from '@app/common/strings/success-messages';
+import { AttachmentsService } from '@app/attachments/attachments.service';
+import { MessageAttachmentsService } from '@app/message-attachments/message-attachments.service';
+import { MessageAttachment } from '@app/message-attachments/entities/message-attachment.entity';
 
 @Injectable()
 export class MessagesService {
@@ -19,21 +26,22 @@ export class MessagesService {
     private readonly messageRepository: Repository<Message>,
 
     private readonly userService: UsersService,
-
-    private readonly conversationsService: ConversationsService,
+    private readonly conversationService: ConversationsService,
+    private readonly attachmentService: AttachmentsService,
+    private readonly messageAttachmentService: MessageAttachmentsService,
   ) {}
 
   async create(dto: CreateMessageDto) {
-    const conversation = await this.conversationsService.findOne(
+    const conversation = await this.conversationService.findOne(
       dto.conversationId,
     );
 
     if (!conversation)
-      throw new NotFoundException(ErrorMessages.conversationNotFound);
+      throw new NotFoundException(ErrorMessages.CONVERSATION_NOT_FOUND);
 
     const sender = await this.userService.findOne(dto.senderId);
 
-    if (!sender) throw new NotFoundException(ErrorMessages.senderNotFound);
+    if (!sender) throw new NotFoundException(ErrorMessages.SENDER_NOT_FOUND);
 
     const message = this.messageRepository.create({
       body: dto.body,
@@ -43,11 +51,33 @@ export class MessagesService {
 
     const saved = await this.messageRepository.save(message);
 
+    // Link attachments (if any) through bridge table
+
+    const uniqueAttachmentIds = [...new Set(dto.attachmentIds)]; //ensure no duplicate attachments
+
+    if (dto.attachmentIds?.length) {
+      const messageAttachments = await Promise.all(
+        uniqueAttachmentIds.map(async (attachmentId) => {
+          const attachment = await this.attachmentService.findOne(attachmentId);
+          if (!attachment) {
+            throw new BadRequestException(ErrorMessages.ATTACHMENT_NOT_FOUND);
+          }
+
+          return this.messageAttachmentService.create({
+            messageId: saved.id,
+            attachmentId: attachment.id,
+          });
+        }),
+      );
+
+      saved.attachmentLinks = messageAttachments;
+    }
+
     return this.toMessageResponse({
       ...saved,
       sender,
       conversation,
-    } as Message);
+    });
   }
 
   async findMessagesByConversation(
@@ -71,8 +101,9 @@ export class MessagesService {
 
     return messages.map((msg) => this.toMessageResponse(msg));
   }
+
   // Helper to transform Message entity to safe DTO
-  private toMessageResponse(msg: Message): MessageResponseObject {
+  private toMessageResponse(msg: Message): MessageResponse {
     const sender: MessageSenderResponse = {
       id: msg.sender.id,
       displayName: msg.sender.displayName,
@@ -93,7 +124,7 @@ export class MessagesService {
         readAt: s.readAt,
       })) || [];
 
-    const response: MessageResponseObject = {
+    const response: MessageResponse = {
       id: msg.id,
       body: msg.body,
       createdAt: msg.createdAt,
@@ -110,7 +141,7 @@ export class MessagesService {
     });
 
     if (result.affected === 0) {
-      throw new NotFoundException(ErrorMessages.messageNotFound);
+      throw new NotFoundException(ErrorMessages.MESSAGE_NOT_FOUND);
     }
   }
 
@@ -121,12 +152,16 @@ export class MessagesService {
     });
   }
 
-  async remove(id: string) {
+  async softDelete(id: string) {
     const result = await this.messageRepository.softDelete(id);
 
     if (!result.affected) {
-      throw new NotFoundException(ErrorMessages.messageNotFound);
+      throw new NotFoundException(ErrorMessages.MESSAGE_NOT_FOUND);
     }
-    return { success: true, message: SuccessMessages.messageDeleted };
+
+    // Clean up bridge table entries
+    await this.messageAttachmentService.softDeleteByMessageId(id);
+
+    return { success: true, message: SuccessMessages.MESSAGE_DELETED };
   }
 }

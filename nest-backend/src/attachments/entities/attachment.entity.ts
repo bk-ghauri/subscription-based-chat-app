@@ -1,10 +1,4 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  ManyToOne,
-  OneToMany,
-} from 'typeorm';
+import { Entity, Column, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import {
   IsUrl,
@@ -13,9 +7,8 @@ import {
   IsString,
   IsPositive,
   Max,
-  IsDate,
 } from 'class-validator';
-import { ValidationMessages } from '@app/common/constants/validation-messages';
+import { ValidationMessages } from '@app/common/strings/validation-messages';
 import { MessageAttachment } from '@app/message-attachments/entities/message-attachment.entity';
 import { BaseEntity } from '@app/common/entities/base.entity';
 
@@ -34,11 +27,12 @@ export class Attachment extends BaseEntity {
   @Column({ type: 'int' })
   @IsInt()
   @IsPositive()
-  @Max(50 * 1024 * 1024, { message: ValidationMessages.fileTooLarge })
+  @Max(50 * 1024 * 1024, { message: ValidationMessages.FILE_TOO_LARGE })
   size: number;
 
   @ManyToOne(() => User, (user) => user.attachments, { onDelete: 'SET NULL' })
-  uploaderId: User;
+  @JoinColumn({ name: 'uploader_id' })
+  uploader: User;
 
   @OneToMany(() => MessageAttachment, (ma) => ma.attachment)
   messageLinks: MessageAttachment[];

@@ -1,8 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AccountType } from './entities/account-type.entity';
 import { Repository } from 'typeorm';
-import { AccountRole } from './types/account-type.enum';
+import { CreateAccountTypeDto } from './dto/create-account-type.dto';
+import { UpdateAccountTypeDto } from './dto/update-account-type.dto';
+import { ErrorMessages } from '@app/common/strings/error-messages';
 
 @Injectable()
 export class AccountTypesService {
@@ -11,17 +13,24 @@ export class AccountTypesService {
     private readonly accountTypeRepository: Repository<AccountType>,
   ) {}
 
-  async findByUserId(userId: string) {
-    return this.accountTypeRepository.findOne({ where: { userId } });
-  }
-
   async findOne(userId: string) {
     return await this.accountTypeRepository.findOne({
       where: { userId },
     });
   }
 
-  async saveOne(userId: string, type: AccountRole) {
-    await this.accountTypeRepository.save({ userId, type });
+  async saveOne(dto: CreateAccountTypeDto) {
+    await this.accountTypeRepository.save(dto);
+  }
+
+  async updateOne(dto: UpdateAccountTypeDto) {
+    const result = await this.accountTypeRepository.update(
+      { userId: dto.userId },
+      { role: dto.role },
+    );
+
+    if (!result.affected) {
+      throw new NotFoundException(ErrorMessages.ACCOUNT_TYPE_NOT_FOUND);
+    }
   }
 }

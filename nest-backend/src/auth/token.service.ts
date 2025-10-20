@@ -4,7 +4,6 @@ import * as config from '@nestjs/config';
 import { Inject } from '@nestjs/common';
 import { AuthJwtPayload } from './types/auth-jwtPayload';
 import jwtConfig from './config/jwt.config';
-import * as jwt from 'jsonwebtoken';
 
 export class TokenService {
   constructor(

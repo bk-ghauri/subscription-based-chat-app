@@ -17,12 +17,10 @@ import { UsersService } from '@app/users/users.service';
 import { ConversationTypeEnum } from './types/conversation.enum';
 import { ConversationResponse } from './responses/conversation-response';
 import { ConversationRole } from '@app/conversation-members/types/conversation-member.enum';
-import { AccountRole } from '@app/account-types/types/account-type.enum';
 import { ConversationCreatorResponse } from './responses/conversation-creator-response';
 import { AddMembersDto } from './dto/add-members.dto';
-import { AccountTypesService } from '@app/account-types/account-types.service';
-import { ErrorMessages } from '@app/common/constants/error-messages';
-import { SuccessMessages } from '@app/common/constants/success-messages';
+import { ErrorMessages } from '@app/common/strings/error-messages';
+import { SuccessMessages } from '@app/common/strings/success-messages';
 
 @Injectable()
 export class ConversationsService {
@@ -31,8 +29,6 @@ export class ConversationsService {
   constructor(
     @InjectRepository(Conversation)
     private readonly conversationRepository: Repository<Conversation>,
-
-    private readonly accountTypeService: AccountTypesService,
     private readonly conversationMemberService: ConversationMembersService,
     private readonly userService: UsersService,
     private readonly dataSource: DataSource,
@@ -73,14 +69,14 @@ export class ConversationsService {
 
   private validateDm(userId: string, dto: CreateConversationDto) {
     if (dto.type !== ConversationTypeEnum.DM) {
-      throw new BadRequestException(ErrorMessages.invalidConversationType);
+      throw new BadRequestException(ErrorMessages.INVALID_CONVERSATION_TYPE);
     }
     if (!dto.memberIds || dto.memberIds.length !== 1) {
-      throw new BadRequestException(ErrorMessages.invalidMemberCount);
+      throw new BadRequestException(ErrorMessages.INVALID_MEMBER_COUNT);
     }
     const otherUserId = dto.memberIds[0];
     if (otherUserId === userId) {
-      throw new BadRequestException(ErrorMessages.dmWithSelf);
+      throw new BadRequestException(ErrorMessages.DM_WITH_SELF);
     }
   }
 
@@ -93,7 +89,7 @@ export class ConversationsService {
     const conversation = await this.findOneWithCreator(existing.id);
 
     if (!conversation) {
-      throw new NotFoundException(ErrorMessages.conversationNotFound);
+      throw new NotFoundException(ErrorMessages.CONVERSATION_NOT_FOUND);
     }
 
     const memberRows =
@@ -133,7 +129,7 @@ export class ConversationsService {
       });
 
       if (users.length !== 2) {
-        throw new NotFoundException(ErrorMessages.userNotFound);
+        throw new NotFoundException(ErrorMessages.USER_NOT_FOUND);
       }
 
       const createdByUser = users.find((u) => u.id === userId)!;
@@ -183,15 +179,7 @@ export class ConversationsService {
 
   private async validateGroup(userId: string, dto: CreateConversationDto) {
     if (dto.type !== ConversationTypeEnum.GROUP) {
-      throw new BadRequestException(ErrorMessages.invalidConversationType);
-    }
-
-    // Only PREMIUM can create groups — check account type
-    const acct = await this.accountTypeService.findOne(userId);
-
-    const role = acct?.role ?? AccountRole.FREE;
-    if (role !== AccountRole.PREMIUM) {
-      throw new ForbiddenException(ErrorMessages.noGroupPrivilege);
+      throw new BadRequestException(ErrorMessages.INVALID_CONVERSATION_TYPE);
     }
 
     // Normalize member IDs (unique + ensure creator included)
@@ -202,7 +190,7 @@ export class ConversationsService {
     const users = await this.userService.findUsersByIds(uniqueIds);
 
     if (users.length !== uniqueIds.length) {
-      throw new BadRequestException(ErrorMessages.userNotFound);
+      throw new BadRequestException(ErrorMessages.USER_NOT_FOUND);
     }
     return { uniqueIds, users };
   }
@@ -258,7 +246,7 @@ export class ConversationsService {
     const conversation = await this.findOne(conversationId);
 
     if (!conversation) {
-      return { success: false, message: ErrorMessages.conversationNotFound };
+      return { success: false, message: ErrorMessages.CONVERSATION_NOT_FOUND };
     }
 
     const membership =
@@ -270,7 +258,7 @@ export class ConversationsService {
     if (!membership) {
       return {
         success: false,
-        message: ErrorMessages.notConversationMember,
+        message: ErrorMessages.NOT_CONVERSATION_MEMBER,
       };
     }
 
@@ -315,11 +303,11 @@ export class ConversationsService {
     const conversation = await this.findOne(conversationId);
 
     if (!conversation) {
-      throw new NotFoundException(ErrorMessages.conversationNotFound);
+      throw new NotFoundException(ErrorMessages.CONVERSATION_NOT_FOUND);
     }
 
     if (conversation.type !== ConversationTypeEnum.GROUP) {
-      throw new BadRequestException(ErrorMessages.cannotLeaveDm);
+      throw new BadRequestException(ErrorMessages.CANNOT_LEAVE_DM);
     }
 
     // Check both users are part of the conversation
@@ -337,21 +325,21 @@ export class ConversationsService {
       );
 
     if (!userMembership) {
-      throw new ForbiddenException(ErrorMessages.notConversationMember);
+      throw new ForbiddenException(ErrorMessages.NOT_CONVERSATION_MEMBER);
     }
 
     if (!removedUserMembership) {
-      throw new ForbiddenException(ErrorMessages.notConversationMember);
+      throw new ForbiddenException(ErrorMessages.NOT_CONVERSATION_MEMBER);
     }
 
     const isAdmin = userMembership.conversationRole === ConversationRole.ADMIN;
 
     if (userId !== removedUserId && !isAdmin) {
-      throw new ForbiddenException(ErrorMessages.notGroupAdmin);
+      throw new ForbiddenException(ErrorMessages.NOT_GROUP_ADMIN);
     }
 
     if (userId === removedUserId && isAdmin) {
-      throw new BadRequestException(ErrorMessages.adminCannotLeave);
+      throw new BadRequestException(ErrorMessages.ADMIN_CANNOT_LEAVE);
     }
 
     await this.conversationMemberService.removeMember(
@@ -361,7 +349,7 @@ export class ConversationsService {
 
     return {
       success: true,
-      message: SuccessMessages.memberRemoved,
+      message: SuccessMessages.MEMBER_REMOVED,
     };
   }
 
@@ -374,11 +362,11 @@ export class ConversationsService {
     const conversation = await this.findOne(conversationId);
 
     if (!conversation) {
-      throw new NotFoundException(ErrorMessages.conversationNotFound);
+      throw new NotFoundException(ErrorMessages.CONVERSATION_NOT_FOUND);
     }
 
     if (conversation.type !== ConversationTypeEnum.GROUP) {
-      throw new BadRequestException(ErrorMessages.invalidConversationType);
+      throw new BadRequestException(ErrorMessages.INVALID_CONVERSATION_TYPE);
     }
 
     // Verify actor is a member
@@ -389,17 +377,17 @@ export class ConversationsService {
       );
 
     if (!actorMembership) {
-      throw new ForbiddenException(ErrorMessages.notConversationMember);
+      throw new ForbiddenException(ErrorMessages.NOT_CONVERSATION_MEMBER);
     }
 
     if (actorMembership.conversationRole !== ConversationRole.ADMIN) {
-      throw new ForbiddenException(ErrorMessages.notGroupAdmin);
+      throw new ForbiddenException(ErrorMessages.NOT_GROUP_ADMIN);
     }
 
     // Validate provided users exist
     const users = await this.userService.findUsersByIds(dto.newMemberIds);
     if (users.length !== dto.newMemberIds.length) {
-      throw new BadRequestException(ErrorMessages.userNotFound);
+      throw new BadRequestException(ErrorMessages.USER_NOT_FOUND);
     }
 
     // Filter out users already in the group
@@ -413,7 +401,7 @@ export class ConversationsService {
     if (filteredUsers.length === 0) {
       return {
         success: true,
-        message: SuccessMessages.userAlreadyMember,
+        message: SuccessMessages.USER_ALREADY_MEMBER,
       };
     }
 
@@ -432,7 +420,7 @@ export class ConversationsService {
 
     return {
       success: true,
-      message: SuccessMessages.memberAdded,
+      message: SuccessMessages.MEMBER_ADDED,
     };
   }
 
@@ -442,7 +430,7 @@ export class ConversationsService {
     const conversation = await this.findOneWithCreator(id);
 
     if (!conversation) {
-      throw new NotFoundException(ErrorMessages.conversationNotFound);
+      throw new NotFoundException(ErrorMessages.CONVERSATION_NOT_FOUND);
     }
 
     const memberRows =

@@ -1,10 +1,12 @@
 import { Attachment } from '@app/attachments/entities/attachment.entity';
+import { BaseEntity } from '@app/common/entities/base.entity';
 import { Message } from '@app/messages/entities/message.entity';
-import { Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, Unique } from 'typeorm';
 
+@Unique(['messageId', 'attachmentId'])
 @Entity('message_attachments')
-export class MessageAttachment {
-  @PrimaryColumn({ type: 'uuid', name: 'message_id' })
+export class MessageAttachment extends BaseEntity {
+  @Column({ type: 'uuid', name: 'message_id' })
   messageId: string;
 
   @ManyToOne(() => Message, (msg) => msg.attachmentLinks, {
@@ -14,7 +16,7 @@ export class MessageAttachment {
   @JoinColumn({ name: 'message_id' })
   message: Message;
 
-  @PrimaryColumn({ type: 'uuid', name: 'attachment_id' })
+  @Column({ type: 'uuid', name: 'attachment_id' })
   attachmentId: string;
 
   @ManyToOne(() => Attachment, (att) => att.messageLinks, {
