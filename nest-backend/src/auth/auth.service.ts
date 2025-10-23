@@ -48,11 +48,12 @@ export class AuthService {
       hashedRefreshToken,
     });
 
-    return {
-      id: newUser.id,
+    const response: LoginResponse = {
+      userId: newUser.id,
       accessToken,
       refreshToken,
     };
+    return response;
   }
 
   async validateUser(email: string, password: string) {

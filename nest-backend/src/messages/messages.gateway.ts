@@ -10,7 +10,6 @@ import {
 import { MessagesService } from './messages.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { Server, Socket } from 'socket.io';
-//import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '@app/users/users.service';
 import { ConversationsService } from '@app/conversations/conversations.service';
 import { Logger } from '@nestjs/common';
@@ -150,7 +149,7 @@ export class MessagesGateway
     return { success: true, room: data.conversationId };
   }
 
-  @SubscribeMessage('sendMessage')
+  @SubscribeMessage('newMessage')
   async handleSendMessage(
     @MessageBody() dto: CreateMessageDto,
     @ConnectedSocket() client: Socket,
@@ -178,7 +177,7 @@ export class MessagesGateway
     if (!user) return;
 
     client.to(body.conversationId).emit('typing', {
-      displayName: user.displayName,
+      userId: user.id,
       isTyping: body.isTyping,
     });
   }
@@ -248,11 +247,10 @@ export class MessagesGateway
   @SubscribeMessage('removeMessage')
   async handleRemoveMessage(
     @MessageBody() data: { messageId: string; conversationId: string },
-    @ConnectedSocket() client: Socket,
   ) {
     await this.messageService.softDelete(data.messageId);
 
-    this.server.in(data.conversationId).emit('MESSAGE_DELETED', {
+    this.server.in(data.conversationId).emit('messageRemoved', {
       messageId: data.messageId,
     });
   }

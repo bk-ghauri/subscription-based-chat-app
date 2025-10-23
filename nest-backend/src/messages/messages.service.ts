@@ -107,7 +107,7 @@ export class MessagesService {
     const sender: MessageSenderResponse = {
       id: msg.sender.id,
       displayName: msg.sender.displayName,
-      avatar: msg.sender.avatarUrl,
+      avatarUrl: msg.sender.avatarUrl,
     };
 
     const attachments: MessageAttachmentResponse[] =
