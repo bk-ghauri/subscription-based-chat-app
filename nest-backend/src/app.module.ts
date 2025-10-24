@@ -13,7 +13,7 @@ import { ConversationMember } from '@app/conversation-members/entities/conversat
 import { Attachment } from './attachments/entities/attachment.entity';
 import { Subscription } from './subscriptions/entities/subscription.entity';
 import { User } from './users/entities/user.entity';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MessagesModule } from './messages/messages.module';
 import { ConversationsModule } from './conversations/conversations.module';
 import { ConversationMembersModule } from './conversation-members/conversation-members.module';
@@ -30,30 +30,33 @@ import { SuspendedModule } from './suspended/suspended.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres',
-      password: 'barira123',
-      database: 'chat_app',
-      entities: [
-        User,
-        AccountType,
-        Suspended,
-        Conversation,
-        ConversationMember,
-        Attachment,
-        Subscription,
-        Message,
-        MessageStatus,
-        MessageAttachment,
-      ],
-      namingStrategy: new SnakeNamingStrategy(),
-      synchronize: false,
-      dropSchema: false,
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        host: configService.get<string>('DB_HOST'),
+        port: configService.get<number>('DB_PORT'),
+        username: configService.get<string>('DB_USERNAME'),
+        password: configService.get<string>('DB_PASSWORD'),
+        database: configService.get<string>('DB_NAME'),
+        entities: [
+          User,
+          AccountType,
+          Suspended,
+          Conversation,
+          ConversationMember,
+          Attachment,
+          Subscription,
+          Message,
+          MessageStatus,
+          MessageAttachment,
+        ],
+        namingStrategy: new SnakeNamingStrategy(),
+        synchronize: false,
+        dropSchema: false,
+      }),
+      inject: [ConfigService],
     }),
-
     ConfigModule.forRoot({
       isGlobal: true, // Makes ConfigModule available in every module
       envFilePath: '.env',
