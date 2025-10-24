@@ -1,5 +1,5 @@
 export class MessageSenderResponse {
   id: string;
   displayName: string;
-  avatar?: string | null;
+  avatarUrl?: string | null;
 }

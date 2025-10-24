@@ -57,7 +57,7 @@ export class ConversationsService {
 
     const response: ConversationResponse = {
       id: conversation.id,
-      type: conversation.type,
+      type: conversation.type as ConversationTypeEnum,
       name: conversation.name ?? null,
       createdAt: conversation.createdAt,
       createdBy,

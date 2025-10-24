@@ -22,8 +22,6 @@ export const ErrorMessages = {
   ADMIN_CANNOT_LEAVE: 'Group admin cannot leave the group',
   UNAUTHORIZED: 'Unauthorized',
   INVALID_CONNECTION_ERROR: 'Invalid client connection:',
-  FILE_TOO_LARGE: (limit: number) =>
-    `File exceeds your plan limit of ${limit} MB`,
   NO_FILE_ATTACHED: 'No file attached',
   ATTACHMENT_NOT_SAVED: 'Could not save attachment',
   INVALID_LINK: 'Invalid or expired link',

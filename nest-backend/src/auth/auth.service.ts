@@ -7,7 +7,7 @@ import {
 import { compare } from 'bcrypt';
 import * as argon2 from 'argon2';
 import { CreateUserDto } from '@app/users/dto/create-user.dto';
-import { LoginResponseObject } from '@app/auth/dto/login-response';
+import { LoginResponse } from '@app/auth/responses/login-response';
 import { ErrorMessages } from '@app/common/strings/error-messages';
 import { TokenService } from './token.service';
 
@@ -48,11 +48,12 @@ export class AuthService {
       hashedRefreshToken,
     });
 
-    return {
-      id: newUser.id,
+    const response: LoginResponse = {
+      userId: newUser.id,
       accessToken,
       refreshToken,
     };
+    return response;
   }
 
   async validateUser(email: string, password: string) {
@@ -73,7 +74,7 @@ export class AuthService {
       userId,
       hashedRefreshToken,
     });
-    const response: LoginResponseObject = {
+    const response: LoginResponse = {
       userId,
       accessToken,
       refreshToken,
@@ -90,7 +91,7 @@ export class AuthService {
       userId,
       hashedRefreshToken,
     });
-    const response: LoginResponseObject = {
+    const response: LoginResponse = {
       userId,
       accessToken,
       refreshToken,

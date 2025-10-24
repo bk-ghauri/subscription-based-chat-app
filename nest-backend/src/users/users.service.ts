@@ -53,7 +53,7 @@ export class UsersService {
   }
 
   async remove(userId: string) {
-    const result = await this.userRepository.softDelete({ id: userId });
+    const result = await this.userRepository.delete({ id: userId });
     if (result.affected === 0) {
       throw new NotFoundException(ErrorMessages.USER_NOT_FOUND);
     }
@@ -143,6 +143,7 @@ export class UsersService {
         displayName: true,
         avatarUrl: true,
         createdAt: true,
+        accountType: { role: true },
       },
     });
 
@@ -151,6 +152,7 @@ export class UsersService {
     }
 
     const response: UserResponse = {
+      id: user.id,
       email: user.email,
       displayName: user.displayName,
       avatarUrl: user.avatarUrl,

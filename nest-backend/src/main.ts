@@ -21,6 +21,16 @@ async function bootstrap() {
   // Raw body only for Stripe webhook route
   app.use('/webhooks/stripe', express.raw({ type: 'application/json' }));
 
+  // Enable CORS for frontend (React Vite dev server)
+  app.enableCors({
+    origin: 'http://localhost:5173', // your frontend
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  });
+
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
